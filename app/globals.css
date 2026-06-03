@@ -67,7 +67,8 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
 
-  --font-sans: "Segoe UI Variable", "Aptos", "Segoe UI", sans-serif;
+  --font-sans: var(--font-instrument-sans), "Segoe UI Variable", "Aptos", "Segoe UI", sans-serif;
+  --font-heading: var(--font-instrument-sans);
   --font-mono: "Cascadia Code", "Aptos Mono", "SFMono-Regular", monospace;
 }
 
