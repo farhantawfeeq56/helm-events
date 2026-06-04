@@ -21,7 +21,7 @@ const items = [
   },
   {
     title: "Agent",
-    url: "#",
+    url: "/agent",
     icon: User,
   },
   {
