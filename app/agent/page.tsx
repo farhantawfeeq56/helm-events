@@ -13,7 +13,7 @@ import {
   XCircle,
   Info,
   ShieldWarning,
-  Activity,
+  Pulse,
   WifiHigh,
   UserPlus,
   Handshake,
@@ -291,7 +291,7 @@ export default function AgentPage() {
                 <Card className="border-slate-200 shadow-sm">
                   <CardHeader className="pb-2">
                     <CardTitle className="flex items-center gap-2 text-sm font-semibold text-slate-500 uppercase tracking-wider">
-                      <Activity size={18} className="text-orange-500" />
+                      <Pulse size={18} className="text-orange-500" />
                       Impact Analysis
                     </CardTitle>
                   </CardHeader>
@@ -361,7 +361,7 @@ export default function AgentPage() {
                 <Card className="border-slate-200 shadow-sm">
                   <CardHeader className="pb-2">
                     <CardTitle className="flex items-center gap-2 text-sm font-semibold text-slate-500 uppercase tracking-wider">
-                      <Activity size={18} className="text-purple-500" />
+                      <Pulse size={18} className="text-purple-500" />
                       Execution Status
                     </CardTitle>
                   </CardHeader>
