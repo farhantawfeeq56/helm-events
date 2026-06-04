@@ -119,6 +119,47 @@ const mockIncidents = [
     icon: WifiHigh,
     color: "red",
   },
+  {
+    id: "room-conflict",
+    title: "Room Conflict",
+    severity: "High",
+    status: "Investigating",
+    timestamp: "2m ago",
+    description: "Hall B is double-booked for the 'AI Ethics' workshop and the 'Cloud Computing' seminar at 2:00 PM.",
+    impact: ["Hall B Schedule", "Attendee Satisfaction", "Speaker Logistics"],
+    recommendedActions: [
+      { id: 11, action: "Move 'Cloud Computing' to Room 101", status: "pending" },
+      { id: 12, action: "Notify speakers of both sessions", status: "pending" },
+      { id: 13, action: "Update signage at Hall B", status: "pending" },
+    ],
+    riskAssessment: {
+      level: "Medium",
+      explanation: "Capacity of Room 101 is smaller than Hall B.",
+    },
+    executionStatus: "Checking Room 101 availability.",
+    icon: Warning,
+    color: "amber",
+  },
+  {
+    id: "schedule-update",
+    title: "Schedule Update",
+    severity: "Low",
+    status: "Open",
+    timestamp: "Just now",
+    description: "The 'Future of AI' panel needs to be shifted from 3:30 PM to 4:00 PM due to a technical setup requirement.",
+    impact: ["Session Timing", "Room Availability"],
+    recommendedActions: [
+      { id: 14, action: "Push back start time to 4:00 PM", status: "pending" },
+      { id: 15, action: "Update mobile app and website", status: "pending" },
+    ],
+    riskAssessment: {
+      level: "Low",
+      explanation: "Minimal impact on the overall program.",
+    },
+    executionStatus: "Awaiting approval for schedule change.",
+    icon: CalendarPlus,
+    color: "blue",
+  },
 ];
 
 const operationalActions = [
@@ -128,14 +169,24 @@ const operationalActions = [
     icon: Clock,
   },
   {
+    label: "Internet Outage",
+    message: "Wi-Fi is down in Hall B and affecting the workshops. Analyze the situation.",
+    icon: WifiHigh,
+  },
+  {
+    label: "Sponsor Request",
+    message: "TechCorp sponsor needs more power outlets at Booth 42. How should we handle this?",
+    icon: Handshake,
+  },
+  {
+    label: "Volunteer Gap",
+    message: "We're short-staffed at registration as some volunteers didn't show up. What's the backup plan?",
+    icon: UserPlus,
+  },
+  {
     label: "Room Conflict",
     message: "There's a room conflict in Hall B between 2 PM and 3 PM. Help me resolve it.",
     icon: Warning,
-  },
-  {
-    label: "VIP Arrival",
-    message: "A VIP has just arrived at the main entrance. Notify the welcoming committee.",
-    icon: UserCircle,
   },
   {
     label: "Schedule Update",
@@ -355,8 +406,12 @@ export default function AgentPage() {
         incidentData = mockIncidents.find((i) => i.id === "sponsor-request");
       } else if (lowerText.includes("volunteer")) {
         incidentData = mockIncidents.find((i) => i.id === "volunteer-absence");
-      } else if (lowerText.includes("internet") || lowerText.includes("wifi")) {
+      } else if (lowerText.includes("internet") || lowerText.includes("wifi") || lowerText.includes("wi-fi")) {
         incidentData = mockIncidents.find((i) => i.id === "internet-outage");
+      } else if (lowerText.includes("conflict")) {
+        incidentData = mockIncidents.find((i) => i.id === "room-conflict");
+      } else if (lowerText.includes("schedule")) {
+        incidentData = mockIncidents.find((i) => i.id === "schedule-update");
       }
 
       const agentMessage: Message = {
