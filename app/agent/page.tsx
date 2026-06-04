@@ -215,17 +215,42 @@ const getStatusColor = (status: string) => {
   }
 };
 
-function OperationalCard({ incident, onActionDecision, onGlobalDecision }: { 
+function OperationalCard({ incident, onActionsApproved, onGlobalDecision }: { 
   incident: typeof mockIncidents[0], 
-  onActionDecision: (actionId: number, decision: 'approved' | 'declined') => void,
+  onActionsApproved: (actionIds: number[]) => void,
   onGlobalDecision: (type: 'escalate' | 'resolve') => void
 }) {
-  const [decisions, setDecisions] = useState<Record<number, 'approved' | 'declined'>>({});
+  const [decisions, setDecisions] = useState<Record<number, 'approved'>>({});
+  const [selectedIds, setSelectedIds] = useState<Record<number, boolean>>({});
 
-  const handleDecision = (id: number, decision: 'approved' | 'declined') => {
-    setDecisions(prev => ({ ...prev, [id]: decision }));
-    onActionDecision(id, decision);
+  const handleToggleSelection = (id: number) => {
+    setSelectedIds(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
   };
+
+  const handleApproveSelected = () => {
+    const idsToApprove = Object.keys(selectedIds)
+      .filter(id => selectedIds[Number(id)])
+      .map(Number);
+    
+    if (idsToApprove.length === 0) return;
+
+    onActionsApproved(idsToApprove);
+    
+    setDecisions(prev => {
+      const next = { ...prev };
+      idsToApprove.forEach(id => {
+        next[id] = 'approved';
+      });
+      return next;
+    });
+    
+    setSelectedIds({});
+  };
+
+  const selectedCount = Object.values(selectedIds).filter(Boolean).length;
 
   return (
     <Card className="w-full border-slate-200 shadow-lg bg-white overflow-hidden">
@@ -310,41 +335,65 @@ function OperationalCard({ incident, onActionDecision, onGlobalDecision }: {
           </h3>
           <div className="space-y-2">
             {incident.recommendedActions.map((action) => (
-              <div key={action.id} className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-                <span className="text-sm font-medium text-slate-700">{action.action}</span>
-                <div className="flex items-center gap-2">
-                  {decisions[action.id] === 'approved' ? (
-                    <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 gap-1">
-                      <Check size={12} weight="bold" /> Approved
-                    </Badge>
-                  ) : decisions[action.id] === 'declined' ? (
-                    <Badge className="bg-red-100 text-red-700 border-red-200 gap-1">
-                      <X size={12} weight="bold" /> Declined
-                    </Badge>
-                  ) : (
-                    <>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={() => handleDecision(action.id, 'approved')}
-                        className="h-8 px-3 rounded-lg border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700"
-                      >
-                        Approve
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={() => handleDecision(action.id, 'declined')}
-                        className="h-8 px-3 rounded-lg border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700"
-                      >
-                        Decline
-                      </Button>
-                    </>
+              <div 
+                key={action.id} 
+                className={cn(
+                  "flex items-center justify-between rounded-xl border p-3 shadow-sm transition-colors",
+                  decisions[action.id] === 'approved' 
+                    ? "border-emerald-100 bg-emerald-50/30" 
+                    : "border-slate-200 bg-white"
+                )}
+              >
+                <div 
+                  className={cn(
+                    "flex items-center gap-3",
+                    !decisions[action.id] && "cursor-pointer"
                   )}
+                  onClick={() => !decisions[action.id] && handleToggleSelection(action.id)}
+                >
+                  {decisions[action.id] === 'approved' ? (
+                    <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                      <CheckCircle size={16} weight="fill" />
+                    </div>
+                  ) : (
+                    <div 
+                      className={cn(
+                        "flex h-5 w-5 items-center justify-center rounded border transition-all",
+                        selectedIds[action.id] 
+                          ? "border-emerald-500 bg-emerald-500 text-white" 
+                          : "border-slate-300 bg-white hover:border-emerald-400"
+                      )}
+                    >
+                      {selectedIds[action.id] && <Check size={12} weight="bold" />}
+                    </div>
+                  )}
+                  <span className={cn(
+                    "text-sm font-medium",
+                    decisions[action.id] === 'approved' ? "text-slate-400" : "text-slate-700"
+                  )}>
+                    {action.action}
+                  </span>
                 </div>
+                {decisions[action.id] === 'approved' && (
+                  <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 gap-1">
+                    <Check size={12} weight="bold" /> Approved
+                  </Badge>
+                )}
               </div>
             ))}
           </div>
+
+          {!incident.recommendedActions.every(a => decisions[a.id] === 'approved') && (
+            <div className="mt-4">
+              <Button 
+                onClick={handleApproveSelected}
+                disabled={selectedCount === 0}
+                className="w-full bg-emerald-600 text-white hover:bg-emerald-700 disabled:bg-slate-100 disabled:text-slate-400 rounded-xl py-6 font-semibold"
+              >
+                Approve Selected {selectedCount > 0 && `(${selectedCount})`}
+              </Button>
+            </div>
+          )}
         </div>
       </CardContent>
 
@@ -429,12 +478,12 @@ export default function AgentPage() {
     }, 1200);
   };
 
-  const handleActionDecision = (actionId: number, decision: 'approved' | 'declined') => {
+  const handleActionsApproved = (actionIds: number[]) => {
     // Add a confirmation message
     const confirmation: Message = {
       id: Date.now().toString(),
       role: "agent",
-      content: `Action ${decision === 'approved' ? 'approved' : 'declined'}. Updating operational logs...`,
+      content: `${actionIds.length} action${actionIds.length > 1 ? 's' : ''} approved. Updating operational logs...`,
       type: "text",
     };
     setMessages(prev => [...prev, confirmation]);
@@ -553,9 +602,9 @@ export default function AgentPage() {
                   {message.type === "operational-card" && message.incidentData ? (
                     <div className="w-full max-w-2xl animate-in fade-in slide-in-from-bottom-2 duration-300">
                       <p className="mb-4 text-slate-700 ml-1">{message.content}</p>
-                      <OperationalCard 
-                        incident={message.incidentData} 
-                        onActionDecision={handleActionDecision}
+                      <OperationalCard
+                        incident={message.incidentData}
+                        onActionsApproved={handleActionsApproved}
                         onGlobalDecision={handleGlobalDecision}
                       />
                     </div>
