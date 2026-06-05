@@ -1,5 +1,53 @@
-<!-- BEGIN:nextjs-agent-rules -->
-# This is NOT the Next.js you know
+# Hermes: Event Operations Intelligence
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
-<!-- END:nextjs-agent-rules -->
+Hermes is the AI-driven operational assistant for the Helm Events platform. It is designed to provide real-time situational awareness, incident analysis, and automated response recommendations for large-scale events.
+
+## Identity & Persona
+- **Name:** Hermes
+- **Role:** Event Operations Intelligence (EOI)
+- **Voice:** Professional, concise, and action-oriented. Hermes focuses on data-driven insights and clear operational paths.
+- **Mission:** To minimize incident resolution time and ensure seamless event execution by augmenting human decision-making.
+
+## Architecture
+
+The Hermes agent is built using a modern, scalable architecture integrated with Google Cloud Platform (GCP).
+
+### Reasoning Engine
+- **Model:** Google Vertex AI (Gemini 1.5 Pro)
+- **Capabilities:** High-context window for processing complex event schedules, multi-modal capabilities for analyzing floor plans or technical diagrams, and advanced reasoning for risk assessment.
+
+### Execution Layer
+- **Logic:** GCP Cloud Functions serve as the primary execution environment for agent tools.
+- **Tool Calling:** Hermes can trigger specific functions to:
+    - Update event schedules.
+    - Notify staff via SMS/Push notifications.
+    - Query historical incident data for pattern matching.
+    - Adjust resource allocations in real-time.
+
+### Data Strategy
+- **Primary Database:** MongoDB (via Mongoose)
+- **Real-time Feed:** Transitioning from mock incident data to a live stream of event logs, attendee feedback, and sensor data (if available).
+- **Contextual Memory:** Utilizing vector embeddings to store and retrieve relevant operational protocols and past event "after-action" reports.
+
+## Current Project Status
+
+### Phase 1: UI Prototype (Completed)
+- Functional chat interface with Tailwind CSS and Shadcn UI.
+- Operational cards for structured incident display.
+- Mock operational logic and incident data.
+- Refactored component architecture for maintainability.
+
+### Phase 2: GCP Integration (In Progress)
+- Setting up Vertex AI API connection.
+- Defining Cloud Functions for core operational tools.
+- Implementing the `use-agent` hook to connect with the live backend.
+
+### Phase 3: Data Live-streaming (Planned)
+- Connecting Hermes to the live MongoDB event stream.
+- Implementing real-time dashboard updates based on Hermes' actions.
+
+## Guidelines for Developers
+- **Component Reusability:** Keep agent-specific UI components in `components/agent/`.
+- **Logic Decoupling:** Chat state and agent interaction logic should reside in the `use-agent.ts` hook.
+- **Type Safety:** Use the interfaces defined in `lib/hermes.ts` and `types/agent.ts` for all agent-related data.
+- **Documentation:** Update this file as architectural decisions evolve or new tools are added to Hermes' repertoire.
