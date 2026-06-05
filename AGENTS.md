@@ -31,16 +31,15 @@ The Hermes agent is built using a modern, scalable architecture integrated with 
 
 ## Current Project Status
 
-### Phase 1: UI Prototype (Completed)
-- Functional chat interface with Tailwind CSS and Shadcn UI.
-- Operational cards for structured incident display.
-- Mock operational logic and incident data.
-- Refactored component architecture for maintainability.
+### Phase 1: Operational Dashboard (Refactoring)
+- Moving from a chat-focused UI to a structured operational dashboard.
+- Implementing clear sections for Impact Analysis, Risk Assessment, Response Options, and Communications.
+- Streamlining incident intake and response workflows.
 
 ### Phase 2: GCP Integration (In Progress)
-- Setting up Vertex AI API connection.
+- Setting up Vertex AI API connection for structured operational output.
 - Defining Cloud Functions for core operational tools.
-- Implementing the `use-agent` hook to connect with the live backend.
+- Implementing the API bridge for GCP services.
 
 ### Phase 3: Data Live-streaming (Planned)
 - Connecting Hermes to the live MongoDB event stream.
@@ -48,6 +47,6 @@ The Hermes agent is built using a modern, scalable architecture integrated with 
 
 ## Guidelines for Developers
 - **Component Reusability:** Keep agent-specific UI components in `components/agent/`.
-- **Logic Decoupling:** Chat state and agent interaction logic should reside in the `use-agent.ts` hook.
-- **Type Safety:** Use the interfaces defined in `lib/hermes.ts` and `types/agent.ts` for all agent-related data.
+- **Operational Clarity:** Prioritize structured data and clear action paths over chat bubbles.
+- **Type Safety:** Use the serializable data models defined in `lib/hermes.ts`.
 - **Documentation:** Update this file as architectural decisions evolve or new tools are added to Hermes' repertoire.

@@ -1,10 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { HermesResponse, mockIncidents } from "@/lib/hermes";
 
+/**
+ * Hermes API Bridge
+ * 
+ * This route serves as the bridge between the frontend and the 
+ * Google Cloud Platform (GCP) services, specifically Vertex AI 
+ * and Cloud Functions.
+ */
 export async function POST(req: NextRequest) {
   try {
     const { message } = await req.json();
     const lowerText = message.toLowerCase();
+
+    // In a production environment, this would call Vertex AI (Gemini 1.5 Pro)
+    // to analyze the input and return a structured response.
+    // For this refactor, we simulate that behavior by returning our 
+    // new serializable data model.
 
     let incidentData = null;
 
@@ -22,22 +34,25 @@ export async function POST(req: NextRequest) {
       incidentData = mockIncidents.find((i) => i.id === "schedule-update");
     }
 
+    // Simulate calling a Cloud Function for pattern matching or real-time data
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
     const response: HermesResponse = {
       content: incidentData
-        ? `I've analyzed the ${incidentData.title} incident. Here is the operational assessment and recommended actions:`
-        : "I've reviewed the situation. How would you like me to proceed with this request?",
+        ? `Operational Analysis for: ${incidentData.title}. Impact assessed and response options generated.`
+        : "Operational command received. I've analyzed the request and found no matching active incidents. How would you like to proceed?",
       type: incidentData ? "operational-card" : "text",
       incidentData: incidentData || undefined,
     };
 
-    // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
     return NextResponse.json(response);
   } catch (error) {
-    console.error("Error in Hermes API:", error);
+    console.error("Error in Hermes API Bridge:", error);
     return NextResponse.json(
-      { content: "Sorry, I encountered an error processing your request.", type: "text" },
+      { 
+        content: "Operational Bridge Error: Failed to communicate with GCP services.", 
+        type: "text" 
+      },
       { status: 500 }
     );
   }

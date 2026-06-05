@@ -1,13 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import {
   Info,
-  Pulse,
-  ShieldWarning,
-  CheckCircle,
-  Check,
-  X,
   Warning,
 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
@@ -16,6 +10,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { cn } from "@/lib/utils";
 import { Incident } from "@/lib/hermes";
 import { IconMap } from "@/lib/constants";
+import { ImpactAnalysis } from "./impact-analysis";
+import { RiskAssessment } from "./risk-assessment";
+import { ResponseOptions } from "./response-options";
+import { CommunicationPlan } from "./communication-plan";
 
 export const getSeverityColor = (severity: string) => {
   switch (severity.toLowerCase()) {
@@ -48,149 +46,83 @@ export function OperationalCard({
   onActionDecision, 
   onGlobalDecision 
 }: OperationalCardProps) {
-  const [decisions, setDecisions] = useState<Record<number, 'approved' | 'declined'>>({});
-
-  const handleDecision = (id: number, decision: 'approved' | 'declined') => {
-    setDecisions(prev => ({ ...prev, [id]: decision }));
-    onActionDecision(id, decision);
-  };
-
   const Icon = IconMap[incident.iconName] || Warning;
 
   return (
-    <Card className="w-full border-slate-200 shadow-lg bg-white overflow-hidden">
-      <CardHeader className="bg-slate-50/50 border-b border-slate-100 pb-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+    <Card className="w-full border-slate-200 shadow-xl bg-white overflow-hidden rounded-3xl">
+      <CardHeader className="bg-slate-50/80 border-b border-slate-100 pb-6 pt-6">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-4">
             <div className={cn(
-              "flex h-10 w-10 items-center justify-center rounded-xl shadow-sm",
-              incident.severity === "Critical" ? "bg-red-100 text-red-600" : "bg-sky-100 text-sky-600"
+              "flex h-14 w-14 items-center justify-center rounded-2xl shadow-md",
+              incident.severity === "Critical" ? "bg-red-600 text-white" : 
+              incident.severity === "High" ? "bg-orange-500 text-white" :
+              "bg-sky-600 text-white"
             )}>
-              <Icon size={24} weight="duotone" />
+              <Icon size={32} weight="duotone" />
             </div>
             <div>
-              <CardTitle className="text-lg font-bold text-slate-900">{incident.title}</CardTitle>
-              <div className="flex items-center gap-2 mt-0.5">
-                <Badge className={cn("h-4 px-1.5 text-[10px] font-bold border uppercase", getSeverityColor(incident.severity))}>
+              <div className="flex items-center gap-2 mb-1">
+                <Badge className={cn("h-5 px-2 text-[10px] font-black border-2 uppercase tracking-wider", getSeverityColor(incident.severity))}>
                   {incident.severity}
                 </Badge>
-                <span className="text-xs text-slate-500 font-medium">{incident.timestamp}</span>
+                <span className="text-xs text-slate-400 font-bold uppercase tracking-widest">{incident.timestamp}</span>
               </div>
+              <CardTitle className="text-2xl font-black text-slate-900 tracking-tight">{incident.title}</CardTitle>
             </div>
           </div>
-          <Badge className={cn("px-2 py-0.5 text-xs font-semibold border", getStatusColor(incident.status))}>
+          <Badge className={cn("px-3 py-1 text-xs font-bold border-2 rounded-full", getStatusColor(incident.status))}>
             {incident.status}
           </Badge>
         </div>
       </CardHeader>
       
-      <CardContent className="pt-6 space-y-6">
+      <CardContent className="pt-8 space-y-10 px-8">
         <div>
-          <h3 className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+          <h3 className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
             <Info size={16} className="text-blue-500" />
-            Situation
+            Operational Situation
           </h3>
-          <p className="text-sm text-slate-700 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100">
+          <p className="text-base text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-100 shadow-inner">
             {incident.description}
           </p>
         </div>
 
-        <div>
-          <h3 className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-            <Pulse size={16} className="text-orange-500" />
-            Impact Analysis
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {incident.impact.map((item, idx) => (
-              <div key={idx} className="flex items-center gap-2 text-xs text-slate-600 bg-white px-3 py-2 rounded-lg border border-slate-200">
-                <div className="h-1.5 w-1.5 rounded-full bg-slate-400" />
-                {item}
-              </div>
-            ))}
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+          <ImpactAnalysis impacts={incident.impactAnalysis} />
+          <RiskAssessment risk={incident.riskAssessment} />
         </div>
 
-        <div>
-          <h3 className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-            <ShieldWarning size={16} className="text-amber-500" />
-            Risk Assessment
-          </h3>
-          <div className="rounded-xl border border-amber-100 bg-amber-50/50 p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-bold text-slate-900">Level:</span>
-              <Badge variant="outline" className={cn(
-                "px-1.5 py-0 text-[10px] font-bold uppercase",
-                incident.riskAssessment.level === "High" ? "border-red-200 text-red-600 bg-red-50" :
-                incident.riskAssessment.level === "Medium" ? "border-amber-200 text-amber-600 bg-amber-50" :
-                "border-blue-200 text-blue-600 bg-blue-50"
-              )}>
-                {incident.riskAssessment.level}
-              </Badge>
-            </div>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              {incident.riskAssessment.explanation}
-            </p>
-          </div>
-        </div>
+        <ResponseOptions options={incident.responseOptions} onActionDecision={onActionDecision} />
+        
+        <CommunicationPlan communications={incident.communications} />
 
-        <div>
-          <h3 className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
-            <CheckCircle size={16} className="text-emerald-500" />
-            Recommended Actions
-          </h3>
-          <div className="space-y-2">
-            {incident.recommendedActions.map((action) => (
-              <div key={action.id} className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-                <span className="text-sm font-medium text-slate-700">{action.action}</span>
-                <div className="flex items-center gap-2">
-                  {decisions[action.id] === 'approved' ? (
-                    <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 gap-1">
-                      <Check size={12} weight="bold" /> Approved
-                    </Badge>
-                  ) : decisions[action.id] === 'declined' ? (
-                    <Badge className="bg-red-100 text-red-700 border-red-200 gap-1">
-                      <X size={12} weight="bold" /> Declined
-                    </Badge>
-                  ) : (
-                    <>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={() => handleDecision(action.id, 'approved')}
-                        className="h-8 px-3 rounded-lg border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700"
-                      >
-                        Approve
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={() => handleDecision(action.id, 'declined')}
-                        className="h-8 px-3 rounded-lg border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700"
-                      >
-                        Decline
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
-            ))}
+        <div className="pt-4 pb-2">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="h-2 w-2 rounded-full bg-sky-500 animate-pulse" />
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Execution Status</span>
+          </div>
+          <div className="bg-slate-900 text-slate-300 font-mono text-xs p-4 rounded-2xl border border-slate-800 shadow-2xl">
+            <span className="text-sky-400">$</span> hermes-exec --status --incident {incident.id}
+            <br />
+            <span className="text-emerald-400">STATUS:</span> {incident.executionStatus}
           </div>
         </div>
       </CardContent>
 
-      <CardFooter className="bg-slate-50 border-t border-slate-100 p-4 flex gap-3">
+      <CardFooter className="bg-slate-50 border-t border-slate-100 p-6 flex gap-4">
         <Button 
           variant="outline" 
-          className="flex-1 bg-white border-slate-200 text-slate-700 hover:bg-slate-100"
+          className="h-12 flex-1 bg-white border-slate-200 text-slate-700 font-bold hover:bg-slate-100 rounded-2xl shadow-sm transition-all"
           onClick={() => onGlobalDecision('escalate')}
         >
-          Escalate to Director
+          Escalate to Command
         </Button>
         <Button 
-          className="flex-1 bg-slate-900 text-white hover:bg-slate-800"
+          className="h-12 flex-1 bg-slate-900 text-white font-bold hover:bg-slate-800 rounded-2xl shadow-lg transition-all"
           onClick={() => onGlobalDecision('resolve')}
         >
-          Mark as Resolved
+          Resolve Incident
         </Button>
       </CardFooter>
     </Card>
