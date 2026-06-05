@@ -27,16 +27,26 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { Incident, RecommendedAction, Severity } from "@/lib/hermes";
+
+const IconMap: Record<string, any> = {
+  Clock,
+  Handshake,
+  UserPlus,
+  WifiHigh,
+  Warning,
+  CalendarPlus,
+};
 
 interface Message {
   id: string;
   role: "user" | "agent";
   content: string;
   type: "text" | "operational-card";
-  incidentData?: typeof mockIncidents[0];
+  incidentData?: Incident;
 }
 
-const mockIncidents = [
+const mockIncidents: Incident[] = [
   {
     id: "speaker-delay",
     title: "Speaker Delay",
@@ -55,7 +65,7 @@ const mockIncidents = [
       explanation: "Delay might cascade into afternoon sessions if not managed properly.",
     },
     executionStatus: "Awaiting approval for schedule adjustment.",
-    icon: Clock,
+    iconName: "Clock",
     color: "amber",
   },
   {
@@ -75,7 +85,7 @@ const mockIncidents = [
       explanation: "Standard operational request, minimal risk to overall event.",
     },
     executionStatus: "Electrical team notified.",
-    icon: Handshake,
+    iconName: "Handshake",
     color: "blue",
   },
   {
@@ -95,7 +105,7 @@ const mockIncidents = [
       explanation: "Can be managed by reallocating existing staff momentarily.",
     },
     executionStatus: "Contacting backup volunteers.",
-    icon: UserPlus,
+    iconName: "UserPlus",
     color: "orange",
   },
   {
@@ -116,7 +126,7 @@ const mockIncidents = [
       explanation: "Multiple sessions rely on internet; downtime significantly impacts session quality.",
     },
     executionStatus: "Venue IT investigating fiber line.",
-    icon: WifiHigh,
+    iconName: "WifiHigh",
     color: "red",
   },
   {
@@ -137,7 +147,7 @@ const mockIncidents = [
       explanation: "Capacity of Room 101 is smaller than Hall B.",
     },
     executionStatus: "Checking Room 101 availability.",
-    icon: Warning,
+    iconName: "Warning",
     color: "amber",
   },
   {
@@ -157,10 +167,11 @@ const mockIncidents = [
       explanation: "Minimal impact on the overall program.",
     },
     executionStatus: "Awaiting approval for schedule change.",
-    icon: CalendarPlus,
+    iconName: "CalendarPlus",
     color: "blue",
   },
 ];
+
 
 const operationalActions = [
   {
@@ -216,7 +227,7 @@ const getStatusColor = (status: string) => {
 };
 
 function OperationalCard({ incident, onActionDecision, onGlobalDecision }: { 
-  incident: typeof mockIncidents[0], 
+  incident: Incident, 
   onActionDecision: (actionId: number, decision: 'approved' | 'declined') => void,
   onGlobalDecision: (type: 'escalate' | 'resolve') => void
 }) {
@@ -227,6 +238,8 @@ function OperationalCard({ incident, onActionDecision, onGlobalDecision }: {
     onActionDecision(id, decision);
   };
 
+  const Icon = IconMap[incident.iconName] || Warning;
+
   return (
     <Card className="w-full border-slate-200 shadow-lg bg-white overflow-hidden">
       <CardHeader className="bg-slate-50/50 border-b border-slate-100 pb-4">
@@ -236,7 +249,7 @@ function OperationalCard({ incident, onActionDecision, onGlobalDecision }: {
               "flex h-10 w-10 items-center justify-center rounded-xl shadow-sm",
               incident.severity === "Critical" ? "bg-red-100 text-red-600" : "bg-sky-100 text-sky-600"
             )}>
-              <incident.icon size={24} weight="duotone" />
+              <Icon size={24} weight="duotone" />
             </div>
             <div>
               <CardTitle className="text-lg font-bold text-slate-900">{incident.title}</CardTitle>
@@ -381,7 +394,7 @@ export default function AgentPage() {
     scrollToBottom();
   }, [messages, isTyping]);
 
-  const handleSendMessage = (text: string) => {
+  const handleSendMessage = async (text: string) => {
     if (!text.trim()) return;
 
     const userMessage: Message = {
@@ -395,38 +408,42 @@ export default function AgentPage() {
     setInput("");
     setIsTyping(true);
 
-    // Simulate agent response
-    setTimeout(() => {
-      const lowerText = text.toLowerCase();
-      let incidentData = null;
+    try {
+      const response = await fetch("/api/hermes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message: text }),
+      });
 
-      if (lowerText.includes("delay")) {
-        incidentData = mockIncidents.find((i) => i.id === "speaker-delay");
-      } else if (lowerText.includes("sponsor")) {
-        incidentData = mockIncidents.find((i) => i.id === "sponsor-request");
-      } else if (lowerText.includes("volunteer")) {
-        incidentData = mockIncidents.find((i) => i.id === "volunteer-absence");
-      } else if (lowerText.includes("internet") || lowerText.includes("wifi") || lowerText.includes("wi-fi")) {
-        incidentData = mockIncidents.find((i) => i.id === "internet-outage");
-      } else if (lowerText.includes("conflict")) {
-        incidentData = mockIncidents.find((i) => i.id === "room-conflict");
-      } else if (lowerText.includes("schedule")) {
-        incidentData = mockIncidents.find((i) => i.id === "schedule-update");
+      if (!response.ok) {
+        throw new Error("Failed to fetch from Hermes API");
       }
+
+      const data = await response.json();
 
       const agentMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "agent",
-        content: incidentData 
-          ? `I've analyzed the ${incidentData.title} incident. Here is the operational assessment and recommended actions:`
-          : "I've reviewed the situation. How would you like me to proceed with this request?",
-        type: incidentData ? "operational-card" : "text",
-        incidentData: incidentData || undefined,
+        content: data.content,
+        type: data.type,
+        incidentData: data.incidentData,
       };
 
       setMessages((prev) => [...prev, agentMessage]);
+    } catch (error) {
+      console.error("Error communicating with Hermes:", error);
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "agent",
+        content: "I'm sorry, I'm having trouble connecting to my systems right now. Please try again in a moment.",
+        type: "text",
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
       setIsTyping(false);
-    }, 1200);
+    }
   };
 
   const handleActionDecision = (actionId: number, decision: 'approved' | 'declined') => {
@@ -509,7 +526,10 @@ export default function AgentPage() {
                           "flex h-10 w-10 items-center justify-center rounded-xl",
                           incident.severity === "Critical" ? "bg-red-100 text-red-600" : "bg-slate-100 text-slate-600"
                         )}>
-                          <incident.icon size={20} />
+                          {(() => {
+                            const Icon = IconMap[incident.iconName] || Warning;
+                            return <Icon size={20} />;
+                          })()}
                         </div>
                         <div className="flex flex-col gap-0.5">
                           <div className="flex items-center gap-2">
