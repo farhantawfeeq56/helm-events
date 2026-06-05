@@ -5,7 +5,7 @@ import {
   Sparkle,
   ArrowUp,
   DotsThree,
-  Activity,
+  Pulse,
   ShieldCheck,
   Broadcast,
   Clock,
@@ -54,7 +54,7 @@ export default function AgentPage() {
             <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">System Live</span>
           </div>
           <div className="flex items-center gap-2">
-            <Activity size={14} className="text-slate-400" />
+            <Pulse size={14} className="text-slate-400" />
             <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Ops Level: Normal</span>
           </div>
         </div>

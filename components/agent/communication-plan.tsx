@@ -1,6 +1,6 @@
 "use client";
 
-import { ChatText, PaperPlaneTilt, Broadcast, Envelope, Mobile } from "@phosphor-icons/react";
+import { ChatText, PaperPlaneTilt, Broadcast, Envelope, DeviceMobile } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CommunicationPlan as CommunicationPlanType } from "@/lib/hermes";
@@ -20,7 +20,7 @@ export function CommunicationPlan({ communications }: CommunicationPlanProps) {
 
   const getChannelIcon = (channel: string) => {
     switch (channel) {
-      case "SMS": return <Mobile size={16} />;
+      case "SMS": return <DeviceMobile size={16} />;
       case "Push": return <ChatText size={16} />;
       case "Email": return <Envelope size={16} />;
       case "Radio": return <Broadcast size={16} />;
