@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import {
   Sparkle,
   ArrowUp,
@@ -13,10 +13,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { mockIncidents } from "@/lib/hermes";
 import { useAgent } from "@/hooks/use-agent";
 import { MessageItem, TypingIndicator } from "@/components/agent/message-item";
-import { IncidentListItem } from "@/components/agent/incident-list-item";
 import { operationalActions } from "@/lib/constants";
 
 export default function AgentPage() {
@@ -30,6 +28,16 @@ export default function AgentPage() {
     handleActionDecision, 
     handleGlobalDecision 
   } = useAgent();
+
+  const reportedIncidents = useMemo(() => {
+    const incidentsMap = new Map();
+    messages.forEach(msg => {
+      if (msg.incidentData) {
+        incidentsMap.set(msg.incidentData.id, msg.incidentData);
+      }
+    });
+    return Array.from(incidentsMap.values());
+  }, [messages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -70,53 +78,6 @@ export default function AgentPage() {
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar - Incident List */}
-        <div className="hidden w-80 flex-col border-r border-slate-200 bg-white lg:flex">
-          <div className="p-4 border-b border-slate-100">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xs font-black uppercase tracking-widest text-slate-400">Active Incidents</h2>
-              <Badge className="bg-red-50 text-red-600 border-red-100 font-bold">{mockIncidents.length}</Badge>
-            </div>
-            <div className="space-y-2 max-h-[calc(100vh-12rem)] overflow-y-auto pr-1">
-              {mockIncidents.map((incident) => (
-                <button
-                  key={incident.id}
-                  onClick={() => onSend(`Analyze incident: ${incident.title}`)}
-                  className="w-full text-left p-3 rounded-xl border border-slate-100 hover:border-sky-200 hover:bg-sky-50 transition-all group"
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-bold text-slate-900 group-hover:text-sky-700">{incident.title}</span>
-                    <span className="text-[10px] text-slate-400 font-medium">{incident.timestamp}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge className="h-4 px-1 text-[8px] font-black uppercase bg-slate-100 text-slate-500 border-none">
-                      {incident.severity}
-                    </Badge>
-                    <div className="h-1 flex-1 bg-slate-100 rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full rounded-full ${
-                          incident.severity === 'Critical' ? 'bg-red-500' : 
-                          incident.severity === 'High' ? 'bg-orange-500' : 'bg-sky-500'
-                        }`} 
-                        style={{ width: incident.severity === 'Critical' ? '100%' : incident.severity === 'High' ? '60%' : '30%' }}
-                      />
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="mt-auto p-4 border-t border-slate-100 bg-slate-50/50">
-            <div className="flex items-center gap-3 text-slate-500">
-              <ShieldCheck size={20} weight="duotone" />
-              <div className="flex flex-col">
-                <span className="text-[10px] font-black uppercase tracking-tight">Security Protocol</span>
-                <span className="text-[10px] font-medium">Encrypted & Verified</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Main Content Area */}
         <div className="flex flex-1 flex-col overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-fixed">
           <div className="flex-1 overflow-y-auto scroll-smooth">
@@ -140,7 +101,7 @@ export default function AgentPage() {
                     {operationalActions.map((action) => (
                       <button
                         key={action.label}
-                        onClick={() => onSend(action.message)}
+                        onClick={() => setInput(action.message)}
                         className="group relative flex items-center gap-4 overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 text-left transition-all hover:border-sky-400 hover:shadow-2xl hover:shadow-sky-100"
                       >
                         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-600 transition-colors group-hover:bg-sky-600 group-hover:text-white">
@@ -236,6 +197,53 @@ export default function AgentPage() {
                   <div className="h-1 w-1 rounded-full bg-slate-400" />
                   <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">GCP Integrated</span>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Sidebar - Incident List */}
+        <div className="hidden w-80 flex-col border-l border-slate-200 bg-white lg:flex">
+          <div className="p-4 border-b border-slate-100">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xs font-black uppercase tracking-widest text-slate-400">Active Incidents</h2>
+              <Badge className="bg-red-50 text-red-600 border-red-100 font-bold">{reportedIncidents.length}</Badge>
+            </div>
+            <div className="space-y-2 max-h-[calc(100vh-12rem)] overflow-y-auto pr-1">
+              {reportedIncidents.map((incident) => (
+                <button
+                  key={incident.id}
+                  onClick={() => setInput(`Analyze incident: ${incident.title}`)}
+                  className="w-full text-left p-3 rounded-xl border border-slate-100 hover:border-sky-200 hover:bg-sky-50 transition-all group"
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-bold text-slate-900 group-hover:text-sky-700">{incident.title}</span>
+                    <span className="text-[10px] text-slate-400 font-medium">{incident.timestamp}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge className="h-4 px-1 text-[8px] font-black uppercase bg-slate-100 text-slate-500 border-none">
+                      {incident.severity}
+                    </Badge>
+                    <div className="h-1 flex-1 bg-slate-100 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full ${
+                          incident.severity === 'Critical' ? 'bg-red-500' : 
+                          incident.severity === 'High' ? 'bg-orange-500' : 'bg-sky-500'
+                        }`} 
+                        style={{ width: incident.severity === 'Critical' ? '100%' : incident.severity === 'High' ? '60%' : '30%' }}
+                      />
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="mt-auto p-4 border-t border-slate-100 bg-slate-50/50">
+            <div className="flex items-center gap-3 text-slate-500">
+              <ShieldCheck size={20} weight="duotone" />
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black uppercase tracking-tight">Security Protocol</span>
+                <span className="text-[10px] font-medium">Encrypted & Verified</span>
               </div>
             </div>
           </div>
