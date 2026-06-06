@@ -59,6 +59,8 @@ export function useAgent() {
   };
 
   const handleActionDecision = (actionId: number, decision: 'approved' | 'modified') => {
+    if (decision !== 'approved') return;
+
     setMessages(prev => {
       const newMessages = [...prev];
       const incidentMessageIndex = [...newMessages].reverse().findIndex(m => m.type === "operational-card" && m.incidentData);
@@ -92,39 +94,6 @@ export function useAgent() {
     });
   };
 
-  const handleCustomPlan = (plan: string) => {
-    setMessages(prev => {
-      const newMessages = [...prev];
-      const incidentMessageIndex = [...newMessages].reverse().findIndex(m => m.type === "operational-card" && m.incidentData);
-      const actualIndex = incidentMessageIndex !== -1 ? newMessages.length - 1 - incidentMessageIndex : -1;
-      
-      if (actualIndex !== -1) {
-        const incidentMessage = newMessages[actualIndex];
-        newMessages[actualIndex] = {
-          ...incidentMessage,
-          incidentData: {
-            ...incidentMessage.incidentData!,
-            executionStatus: `Executing custom plan: ${plan}`
-          }
-        };
-      }
-
-      const confirmation: Message = {
-        id: Date.now().toString(),
-        role: "agent",
-        content: `CUSTOM STRATEGY ADOPTED: "${plan.toUpperCase()}". INITIALIZING PHASES.`,
-        type: "execution-checklist",
-        checklist: [
-          { text: "Resource allocation for custom plan", status: "completed" },
-          { text: "Executing user-defined strategy", status: "in-progress" },
-          { text: "Verifying operational outcome", status: "pending" }
-        ]
-      };
-
-      return [...newMessages, confirmation];
-    });
-  };
-
   const handleGlobalDecision = (type: 'escalate' | 'resolve') => {
     const confirmation: Message = {
       id: Date.now().toString(),
@@ -142,7 +111,6 @@ export function useAgent() {
     isTyping,
     handleSendMessage,
     handleActionDecision,
-    handleCustomPlan,
     handleGlobalDecision,
   };
 }

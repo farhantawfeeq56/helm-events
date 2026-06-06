@@ -37,14 +37,16 @@ export const getStatusColor = (status: string) => {
 interface OperationalCardProps {
   incident: Incident;
   onActionDecision: (actionId: number, decision: 'approved' | 'modified') => void;
-  onCustomPlan: (plan: string) => void;
+  onModifyPlan: (title: string) => void;
+  onMyOwnPlan: () => void;
   onGlobalDecision: (type: 'escalate' | 'resolve') => void;
 }
 
 export function OperationalCard({ 
   incident, 
   onActionDecision, 
-  onCustomPlan,
+  onModifyPlan,
+  onMyOwnPlan,
   onGlobalDecision 
 }: OperationalCardProps) {
   const Icon = IconMap[incident.iconName] || Warning;
@@ -97,7 +99,8 @@ export function OperationalCard({
         <ResponseOptions 
           options={incident.responseOptions} 
           onActionDecision={onActionDecision} 
-          onCustomPlan={onCustomPlan}
+          onModifyPlan={onModifyPlan}
+          onMyOwnPlan={onMyOwnPlan}
         />
         
         <CommunicationPlan communications={incident.communications} />

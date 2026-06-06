@@ -3,7 +3,6 @@
 import { CheckCircle, Check, Lightbulb, Plus, Minus, NotePencil } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { RecommendedAction } from "@/lib/hermes";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -11,22 +10,19 @@ import { cn } from "@/lib/utils";
 interface ResponseOptionsProps {
   options: RecommendedAction[];
   onActionDecision: (id: number, decision: 'approved' | 'modified') => void;
-  onCustomPlan: (plan: string) => void;
+  onModifyPlan: (title: string) => void;
+  onMyOwnPlan: () => void;
 }
 
-export function ResponseOptions({ options, onActionDecision, onCustomPlan }: ResponseOptionsProps) {
+export function ResponseOptions({ options, onActionDecision, onModifyPlan, onMyOwnPlan }: ResponseOptionsProps) {
   const [decisions, setDecisions] = useState<Record<number, 'approved' | 'modified'>>({});
-  const [customPlan, setCustomPlan] = useState("");
 
-  const handleDecision = (id: number, decision: 'approved' | 'modified') => {
+  const handleDecision = (id: number, decision: 'approved' | 'modified', title: string) => {
     setDecisions(prev => ({ ...prev, [id]: decision }));
-    onActionDecision(id, decision);
-  };
-
-  const handleExecuteCustomPlan = () => {
-    if (customPlan.trim()) {
-      onCustomPlan(customPlan);
-      setCustomPlan("");
+    if (decision === 'approved') {
+      onActionDecision(id, decision);
+    } else {
+      onModifyPlan(title);
     }
   };
 
@@ -67,7 +63,7 @@ export function ResponseOptions({ options, onActionDecision, onCustomPlan }: Res
                     <Button 
                       size="sm" 
                       variant="outline" 
-                      onClick={() => handleDecision(action.id, 'approved')}
+                      onClick={() => handleDecision(action.id, 'approved', action.title)}
                       className="h-8 px-3 text-xs font-bold rounded-lg border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 transition-colors"
                     >
                       Approve Plan
@@ -75,7 +71,7 @@ export function ResponseOptions({ options, onActionDecision, onCustomPlan }: Res
                     <Button 
                       size="sm" 
                       variant="outline" 
-                      onClick={() => handleDecision(action.id, 'modified')}
+                      onClick={() => handleDecision(action.id, 'modified', action.title)}
                       className="h-8 px-3 text-xs font-bold rounded-lg border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-colors"
                     >
                       Modify Plan
@@ -135,28 +131,15 @@ export function ResponseOptions({ options, onActionDecision, onCustomPlan }: Res
         ))}
       </div>
 
-      <div className="mt-8 pt-8 border-t border-slate-200">
-        <h3 className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">
-          <NotePencil size={16} className="text-sky-500" />
-          My Own Plan
-        </h3>
-        <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm focus-within:ring-2 focus-within:ring-sky-500/20 focus-within:border-sky-500 transition-all">
-          <Textarea 
-            placeholder="Describe your custom recovery strategy..."
-            value={customPlan}
-            onChange={(e) => setCustomPlan(e.target.value)}
-            className="min-h-[100px] w-full resize-none border-none bg-transparent p-0 text-sm font-medium placeholder:text-slate-400 focus-visible:ring-0"
-          />
-          <div className="mt-4 flex justify-end">
-            <Button 
-              onClick={handleExecuteCustomPlan}
-              disabled={!customPlan.trim()}
-              className="bg-slate-900 text-white font-bold hover:bg-sky-600 rounded-xl transition-all"
-            >
-              Execute Custom Plan
-            </Button>
-          </div>
-        </div>
+      <div className="mt-6 flex justify-center">
+        <Button 
+          variant="ghost"
+          onClick={onMyOwnPlan}
+          className="flex items-center gap-2 text-slate-500 hover:text-sky-600 hover:bg-sky-50 rounded-xl transition-all font-bold text-sm"
+        >
+          <NotePencil size={18} />
+          Suggest My Own Plan
+        </Button>
       </div>
     </div>
   );

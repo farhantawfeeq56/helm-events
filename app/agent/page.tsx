@@ -21,13 +21,13 @@ import { operationalActions } from "@/lib/constants";
 export default function AgentPage() {
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   
   const { 
     messages, 
     isTyping, 
     handleSendMessage, 
     handleActionDecision, 
-    handleCustomPlan,
     handleGlobalDecision 
   } = useAgent();
 
@@ -62,6 +62,32 @@ export default function AgentPage() {
   const onSend = (text: string) => {
     handleSendMessage(text);
     setInput("");
+  };
+
+  const handleModifyPlan = (title: string) => {
+    const text = `Option [${title}] with the following modifications: `;
+    setInput(text);
+    
+    // Focus textarea and put cursor at the end
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        textareaRef.current.setSelectionRange(text.length, text.length);
+      }
+    }, 0);
+  };
+
+  const handleMyOwnPlan = () => {
+    const text = "Ignore the proposed options and proceed with the following plan: ";
+    setInput(text);
+    
+    // Focus textarea and put cursor at the end
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        textareaRef.current.setSelectionRange(text.length, text.length);
+      }
+    }, 0);
   };
 
   return (
@@ -158,7 +184,8 @@ export default function AgentPage() {
                       key={message.id} 
                       message={message} 
                       onActionDecision={handleActionDecision}
-                      onCustomPlan={handleCustomPlan}
+                      onModifyPlan={handleModifyPlan}
+                      onMyOwnPlan={handleMyOwnPlan}
                       onGlobalDecision={handleGlobalDecision}
                     />
                   ))}
@@ -177,6 +204,7 @@ export default function AgentPage() {
                   <span className="font-mono text-lg font-bold">/</span>
                 </div>
                 <Textarea
+                  ref={textareaRef}
                   placeholder="Enter operational command (e.g., /analyze speaker-delay)"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}

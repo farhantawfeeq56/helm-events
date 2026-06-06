@@ -9,11 +9,12 @@ import { ExecutionChecklist } from "./execution-checklist";
 interface MessageItemProps {
   message: Message;
   onActionDecision: (actionId: number, decision: 'approved' | 'modified') => void;
-  onCustomPlan: (plan: string) => void;
+  onModifyPlan: (title: string) => void;
+  onMyOwnPlan: () => void;
   onGlobalDecision: (type: 'escalate' | 'resolve') => void;
 }
 
-export function MessageItem({ message, onActionDecision, onCustomPlan, onGlobalDecision }: MessageItemProps) {
+export function MessageItem({ message, onActionDecision, onModifyPlan, onMyOwnPlan, onGlobalDecision }: MessageItemProps) {
   return (
     <div
       id={`message-${message.id}`}
@@ -37,7 +38,8 @@ export function MessageItem({ message, onActionDecision, onCustomPlan, onGlobalD
           <OperationalCard 
             incident={message.incidentData} 
             onActionDecision={onActionDecision}
-            onCustomPlan={onCustomPlan}
+            onModifyPlan={onModifyPlan}
+            onMyOwnPlan={onMyOwnPlan}
             onGlobalDecision={onGlobalDecision}
           />
         </div>
