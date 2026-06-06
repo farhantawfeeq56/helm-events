@@ -7,11 +7,12 @@ import { OperationalCard } from "./operational-card";
 
 interface MessageItemProps {
   message: Message;
-  onActionDecision: (actionId: number, decision: 'approved' | 'declined') => void;
+  onActionDecision: (actionId: number, decision: 'approved' | 'modified') => void;
+  onCustomPlan: (plan: string) => void;
   onGlobalDecision: (type: 'escalate' | 'resolve') => void;
 }
 
-export function MessageItem({ message, onActionDecision, onGlobalDecision }: MessageItemProps) {
+export function MessageItem({ message, onActionDecision, onCustomPlan, onGlobalDecision }: MessageItemProps) {
   return (
     <div
       className={cn(
@@ -34,6 +35,7 @@ export function MessageItem({ message, onActionDecision, onGlobalDecision }: Mes
           <OperationalCard 
             incident={message.incidentData} 
             onActionDecision={onActionDecision}
+            onCustomPlan={onCustomPlan}
             onGlobalDecision={onGlobalDecision}
           />
         </div>

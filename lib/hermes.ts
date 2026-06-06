@@ -7,7 +7,7 @@ export interface RecommendedAction {
   pros: string[];
   cons: string[];
   operationalConsiderations: string;
-  status: "pending" | "approved" | "declined";
+  status: "pending" | "approved" | "modified";
   priority: "high" | "medium" | "low";
 }
 

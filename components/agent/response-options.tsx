@@ -1,23 +1,33 @@
 "use client";
 
-import { CheckCircle, Check, X, Lightbulb, Plus, Minus } from "@phosphor-icons/react";
+import { CheckCircle, Check, Lightbulb, Plus, Minus, NotePencil } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { RecommendedAction } from "@/lib/hermes";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface ResponseOptionsProps {
   options: RecommendedAction[];
-  onActionDecision: (id: number, decision: 'approved' | 'declined') => void;
+  onActionDecision: (id: number, decision: 'approved' | 'modified') => void;
+  onCustomPlan: (plan: string) => void;
 }
 
-export function ResponseOptions({ options, onActionDecision }: ResponseOptionsProps) {
-  const [decisions, setDecisions] = useState<Record<number, 'approved' | 'declined'>>({});
+export function ResponseOptions({ options, onActionDecision, onCustomPlan }: ResponseOptionsProps) {
+  const [decisions, setDecisions] = useState<Record<number, 'approved' | 'modified'>>({});
+  const [customPlan, setCustomPlan] = useState("");
 
-  const handleDecision = (id: number, decision: 'approved' | 'declined') => {
+  const handleDecision = (id: number, decision: 'approved' | 'modified') => {
     setDecisions(prev => ({ ...prev, [id]: decision }));
     onActionDecision(id, decision);
+  };
+
+  const handleExecuteCustomPlan = () => {
+    if (customPlan.trim()) {
+      onCustomPlan(customPlan);
+      setCustomPlan("");
+    }
   };
 
   return (
@@ -48,9 +58,9 @@ export function ResponseOptions({ options, onActionDecision }: ResponseOptionsPr
                   <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 gap-1.5 py-1.5 px-3 rounded-xl">
                     <Check size={14} weight="bold" /> Approved
                   </Badge>
-                ) : decisions[action.id] === 'declined' ? (
-                  <Badge className="bg-red-100 text-red-700 border-red-200 gap-1.5 py-1.5 px-3 rounded-xl">
-                    <X size={14} weight="bold" /> Declined
+                ) : decisions[action.id] === 'modified' ? (
+                  <Badge className="bg-blue-100 text-blue-700 border-blue-200 gap-1.5 py-1.5 px-3 rounded-xl">
+                    <NotePencil size={14} weight="bold" /> Modified
                   </Badge>
                 ) : (
                   <>
@@ -60,15 +70,15 @@ export function ResponseOptions({ options, onActionDecision }: ResponseOptionsPr
                       onClick={() => handleDecision(action.id, 'approved')}
                       className="h-8 px-3 text-xs font-bold rounded-lg border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 transition-colors"
                     >
-                      Approve
+                      Approve Plan
                     </Button>
                     <Button 
                       size="sm" 
                       variant="outline" 
-                      onClick={() => handleDecision(action.id, 'declined')}
-                      className="h-8 px-3 text-xs font-bold rounded-lg border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors"
+                      onClick={() => handleDecision(action.id, 'modified')}
+                      className="h-8 px-3 text-xs font-bold rounded-lg border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-colors"
                     >
-                      Decline
+                      Modify Plan
                     </Button>
                   </>
                 )}
@@ -123,6 +133,30 @@ export function ResponseOptions({ options, onActionDecision }: ResponseOptionsPr
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="mt-8 pt-8 border-t border-slate-200">
+        <h3 className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">
+          <NotePencil size={16} className="text-sky-500" />
+          My Own Plan
+        </h3>
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm focus-within:ring-2 focus-within:ring-sky-500/20 focus-within:border-sky-500 transition-all">
+          <Textarea 
+            placeholder="Describe your custom recovery strategy..."
+            value={customPlan}
+            onChange={(e) => setCustomPlan(e.target.value)}
+            className="min-h-[100px] w-full resize-none border-none bg-transparent p-0 text-sm font-medium placeholder:text-slate-400 focus-visible:ring-0"
+          />
+          <div className="mt-4 flex justify-end">
+            <Button 
+              onClick={handleExecuteCustomPlan}
+              disabled={!customPlan.trim()}
+              className="bg-slate-900 text-white font-bold hover:bg-sky-600 rounded-xl transition-all"
+            >
+              Execute Custom Plan
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );

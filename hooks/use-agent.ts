@@ -58,11 +58,21 @@ export function useAgent() {
     }
   };
 
-  const handleActionDecision = (actionId: number, decision: 'approved' | 'declined') => {
+  const handleActionDecision = (actionId: number, decision: 'approved' | 'modified') => {
     const confirmation: Message = {
       id: Date.now().toString(),
       role: "agent",
-      content: `Action ${decision === 'approved' ? 'approved' : 'declined'}. Updating operational logs...`,
+      content: `Action ${decision === 'approved' ? 'approved' : 'modified'}. Execution Begins.`,
+      type: "text",
+    };
+    setMessages(prev => [...prev, confirmation]);
+  };
+
+  const handleCustomPlan = (plan: string) => {
+    const confirmation: Message = {
+      id: Date.now().toString(),
+      role: "agent",
+      content: `Custom plan accepted: "${plan}". Execution Begins.`,
       type: "text",
     };
     setMessages(prev => [...prev, confirmation]);
