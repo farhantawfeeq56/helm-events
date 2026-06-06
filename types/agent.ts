@@ -1,4 +1,4 @@
-import { Incident } from "@/lib/hermes";
+import { Incident, ChecklistItem } from "@/lib/hermes";
 
 export interface Message {
   id: string;
@@ -6,7 +6,7 @@ export interface Message {
   content: string;
   type: "text" | "operational-card" | "execution-checklist";
   incidentData?: Incident;
-  checklist?: { text: string; status: "pending" | "in-progress" | "completed" }[];
+  checklist?: ChecklistItem[];
 }
 
 export interface OperationalAction {

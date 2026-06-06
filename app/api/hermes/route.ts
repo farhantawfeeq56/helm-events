@@ -1,49 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
-import { HermesResponse, mockIncidents } from "@/lib/hermes";
+import { processHermesMessage } from "@/lib/hermes-handler";
 
 /**
  * Hermes API Bridge
  * 
- * This route serves as the bridge between the frontend and the 
- * Google Cloud Platform (GCP) services, specifically Vertex AI 
- * and Cloud Functions.
+ * This route serves as a lightweight wrapper around the shared handler,
+ * which can also be deployed as a GCP Cloud Function.
  */
 export async function POST(req: NextRequest) {
   try {
     const { message } = await req.json();
-    const lowerText = message.toLowerCase();
 
-    // In a production environment, this would call Vertex AI (Gemini 1.5 Pro)
-    // to analyze the input and return a structured response.
-    // For this refactor, we simulate that behavior by returning our 
-    // new serializable data model.
-
-    let incidentData = null;
-
-    if (lowerText.includes("delay")) {
-      incidentData = mockIncidents.find((i) => i.id === "speaker-delay");
-    } else if (lowerText.includes("sponsor")) {
-      incidentData = mockIncidents.find((i) => i.id === "sponsor-request");
-    } else if (lowerText.includes("volunteer")) {
-      incidentData = mockIncidents.find((i) => i.id === "volunteer-absence");
-    } else if (lowerText.includes("internet") || lowerText.includes("wifi") || lowerText.includes("wi-fi")) {
-      incidentData = mockIncidents.find((i) => i.id === "internet-outage");
-    } else if (lowerText.includes("conflict")) {
-      incidentData = mockIncidents.find((i) => i.id === "room-conflict");
-    } else if (lowerText.includes("schedule")) {
-      incidentData = mockIncidents.find((i) => i.id === "schedule-update");
+    if (!message) {
+      return NextResponse.json(
+        { content: "No message provided.", type: "text" },
+        { status: 400 }
+      );
     }
 
-    // Simulate calling a Cloud Function for pattern matching or real-time data
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    const response: HermesResponse = {
-      content: incidentData
-        ? `ANALYSIS COMPLETE: ${incidentData.title.toUpperCase()}. RESPONSE OPTIONS GENERATED.`
-        : "NO MATCHING INCIDENT FOUND. AWAITING COMMAND.",
-      type: incidentData ? "operational-card" : "text",
-      incidentData: incidentData || undefined,
-    };
+    const response = await processHermesMessage(message);
 
     return NextResponse.json(response);
   } catch (error) {
