@@ -40,7 +40,8 @@ export function useAgent() {
         role: "agent",
         content: data.content,
         type: data.type,
-        incidentData: data.incidentData,
+        incidentData: data.type === "operational-card" ? data.incidentData : undefined,
+        checklist: data.type === "execution-checklist" ? data.checklist : undefined,
       };
 
       setMessages((prev) => [...prev, agentMessage]);

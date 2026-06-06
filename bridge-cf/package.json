@@ -1,0 +1,17 @@
+{
+  "name": "hermes-bridge-cf",
+  "version": "1.0.0",
+  "description": "Hermes API Bridge - GCP Cloud Function",
+  "main": "index.js",
+  "scripts": {
+    "start": "functions-framework --target=hermesBridge",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@google-cloud/functions-framework": "^3.3.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  }
+}

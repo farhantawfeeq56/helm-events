@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# GCP Cloud Function
+bridge-cf/dist/
+bridge-cf/*.zip
+bridge-cf/node_modules/
