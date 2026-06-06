@@ -9,6 +9,7 @@ export interface RecommendedAction {
   operationalConsiderations: string;
   status: "pending" | "approved" | "modified";
   priority: "high" | "medium" | "low";
+  steps?: { text: string; status: "pending" | "in-progress" | "completed" }[];
 }
 
 export interface RiskAssessment {
@@ -70,7 +71,12 @@ export const mockIncidents: Incident[] = [
         cons: ["Impacts lunch break timing", "May cause conflicts for attendees with afternoon meetings"],
         operationalConsiderations: "Requires immediate coordination with catering to delay lunch service by 20 minutes.",
         status: "pending",
-        priority: "high"
+        priority: "high",
+        steps: [
+          { text: "Coordinate with catering for lunch delay", status: "completed" },
+          { text: "Update Main Stage AV schedule", status: "in-progress" },
+          { text: "Notify session moderators", status: "pending" }
+        ]
       },
       {
         id: 2,
@@ -80,7 +86,12 @@ export const mockIncidents: Incident[] = [
         cons: ["May lead to attendee restlessness", "Crowding in the coffee area"],
         operationalConsiderations: "Request additional coffee and snacks from catering for the extended period.",
         status: "pending",
-        priority: "medium"
+        priority: "medium",
+        steps: [
+          { text: "Request additional coffee/snacks from catering", status: "completed" },
+          { text: "Inform expo hall staff of extension", status: "in-progress" },
+          { text: "Monitor crowd density in coffee areas", status: "pending" }
+        ]
       },
       {
         id: 3,
@@ -90,7 +101,12 @@ export const mockIncidents: Incident[] = [
         cons: ["May cause minor frustration for early-arriving attendees"],
         operationalConsiderations: "Draft the message to focus on the 'extra networking time' to keep the tone positive.",
         status: "pending",
-        priority: "high"
+        priority: "high",
+        steps: [
+          { text: "Draft push notification message", status: "completed" },
+          { text: "Get approval from Event Director", status: "completed" },
+          { text: "Schedule push notification in CMS", status: "in-progress" }
+        ]
       },
     ],
     riskAssessment: {
@@ -123,7 +139,12 @@ export const mockIncidents: Incident[] = [
         cons: ["May temporarily block aisle during installation"],
         operationalConsiderations: "Ensure the team works quickly to avoid disruption during peak hall hours.",
         status: "pending",
-        priority: "medium"
+        priority: "medium",
+        steps: [
+          { text: "Locate available electrical team members", status: "completed" },
+          { text: "Dispatch team to Booth 42", status: "in-progress" },
+          { text: "Verify completion and sponsor satisfaction", status: "pending" }
+        ]
       },
       {
         id: 5,
@@ -133,7 +154,12 @@ export const mockIncidents: Incident[] = [
         cons: ["Adds a small delay to the response"],
         operationalConsiderations: "Have the venue engineer on standby while the electrical team performs the installation.",
         status: "pending",
-        priority: "high"
+        priority: "high",
+        steps: [
+          { text: "Contact venue engineering desk", status: "completed" },
+          { text: "Review circuit load for Hall B Sector 4", status: "in-progress" },
+          { text: "Approve additional draw", status: "pending" }
+        ]
       },
     ],
     riskAssessment: {
@@ -165,7 +191,12 @@ export const mockIncidents: Incident[] = [
         cons: ["Reduces support availability for breakout speakers"],
         operationalConsiderations: "Brief the reassigned volunteers on registration procedures before they start.",
         status: "pending",
-        priority: "medium"
+        priority: "medium",
+        steps: [
+          { text: "Identify underutilized volunteers in Track 3", status: "completed" },
+          { text: "Reassign 2 volunteers to Registration", status: "in-progress" },
+          { text: "Provide quick briefing on reg software", status: "pending" }
+        ]
       },
       {
         id: 7,
@@ -175,7 +206,12 @@ export const mockIncidents: Incident[] = [
         cons: ["Takes 30-60 minutes for backup staff to arrive"],
         operationalConsiderations: "Offer additional meal vouchers as an incentive for last-minute callers.",
         status: "pending",
-        priority: "medium"
+        priority: "medium",
+        steps: [
+          { text: "Access standby volunteer contact list", status: "completed" },
+          { text: "Send automated SMS blast to standby pool", status: "in-progress" },
+          { text: "Confirm 3 replacements", status: "pending" }
+        ]
       },
     ],
     riskAssessment: {
@@ -207,7 +243,12 @@ export const mockIncidents: Incident[] = [
         cons: ["Limited bandwidth compared to fiber Wi-Fi", "Requires manual setup at each booth"],
         operationalConsiderations: "Prioritize booths with scheduled live presentations over general expo stalls.",
         status: "pending",
-        priority: "high"
+        priority: "high",
+        steps: [
+          { text: "Retrieve 5G hotspots from storage", status: "completed" },
+          { text: "Deploy to Hall B demo stations 1-5", status: "in-progress" },
+          { text: "Verify connectivity at each station", status: "pending" }
+        ]
       },
       {
         id: 9,
@@ -217,7 +258,12 @@ export const mockIncidents: Incident[] = [
         cons: ["Resolution time is outside of our direct control"],
         operationalConsiderations: "Ask for an ETR (Estimated Time to Repair) every 15 minutes to manage expectations.",
         status: "pending",
-        priority: "high"
+        priority: "high",
+        steps: [
+          { text: "Initiate emergency IT support ticket", status: "completed" },
+          { text: "Conference call with ISP lead", status: "in-progress" },
+          { text: "Receive ETR and report back", status: "pending" }
+        ]
       },
       {
         id: 10,
@@ -227,7 +273,12 @@ export const mockIncidents: Incident[] = [
         cons: ["Increases awareness of the failure among unaffected attendees"],
         operationalConsiderations: "Keep updates brief and focused on the actions being taken.",
         status: "pending",
-        priority: "medium"
+        priority: "medium",
+        steps: [
+          { text: "Draft outage acknowledgment message", status: "completed" },
+          { text: "Push update to event mobile app", status: "in-progress" },
+          { text: "Update digital signage in Hall B", status: "pending" }
+        ]
       },
     ],
     riskAssessment: {
@@ -260,7 +311,12 @@ export const mockIncidents: Incident[] = [
         cons: ["Room 101 has 30% less capacity", "Requires attendees to walk to another wing"],
         operationalConsiderations: "Station a staff member at Hall B to redirect attendees to Room 101.",
         status: "pending",
-        priority: "high"
+        priority: "high",
+        steps: [
+          { text: "Confirm Room 101 is vacant and setup", status: "completed" },
+          { text: "Station redirect staff at Hall B", status: "in-progress" },
+          { text: "Coordinate speaker relocation", status: "pending" }
+        ]
       },
       {
         id: 12,
@@ -270,7 +326,12 @@ export const mockIncidents: Incident[] = [
         cons: ["May cause stress for the relocating speaker"],
         operationalConsiderations: "Offer technical assistant to help the Cloud Computing speaker move their materials.",
         status: "pending",
-        priority: "high"
+        priority: "high",
+        steps: [
+          { text: "Locate 'AI Ethics' speaker", status: "completed" },
+          { text: "Locate 'Cloud Computing' speaker", status: "completed" },
+          { text: "Brief both speakers on resolution", status: "in-progress" }
+        ]
       },
       {
         id: 13,
@@ -280,7 +341,12 @@ export const mockIncidents: Incident[] = [
         cons: ["Requires rapid production of physical signs if digital ones fail"],
         operationalConsiderations: "Use 'Move' directional arrows to make the new location clear.",
         status: "pending",
-        priority: "medium"
+        priority: "medium",
+        steps: [
+          { text: "Update digital door sign for Hall B", status: "completed" },
+          { text: "Place physical A-frame with redirection", status: "in-progress" },
+          { text: "Update wayfinding kiosks", status: "pending" }
+        ]
       },
     ],
     riskAssessment: {
@@ -312,7 +378,12 @@ export const mockIncidents: Incident[] = [
         cons: ["Shortens the Q&A portion if the room is needed later"],
         operationalConsiderations: "Check if the following session in the same room can also be shifted if needed.",
         status: "pending",
-        priority: "low"
+        priority: "low",
+        steps: [
+          { text: "Verify technical setup requirements", status: "completed" },
+          { text: "Consult with panel speakers on shift", status: "in-progress" },
+          { text: "Finalize new start time", status: "pending" }
+        ]
       },
       {
         id: 15,
@@ -322,7 +393,12 @@ export const mockIncidents: Incident[] = [
         cons: ["None"],
         operationalConsiderations: "Verify that the sync completes across all caching layers of the website.",
         status: "pending",
-        priority: "low"
+        priority: "low",
+        steps: [
+          { text: "Update schedule in master CMS", status: "completed" },
+          { text: "Trigger mobile app cache refresh", status: "in-progress" },
+          { text: "Verify website update", status: "pending" }
+        ]
       },
     ],
     riskAssessment: {
