@@ -95,6 +95,7 @@ export function useAgent() {
     isTyping,
     handleSendMessage,
     handleActionDecision,
+    handleCustomPlan,
     handleGlobalDecision,
   };
 }
