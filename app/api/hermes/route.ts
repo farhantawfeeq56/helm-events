@@ -39,8 +39,8 @@ export async function POST(req: NextRequest) {
 
     const response: HermesResponse = {
       content: incidentData
-        ? `Operational Analysis for: ${incidentData.title}. Impact assessed and response options generated.`
-        : "Operational command received. I've analyzed the request and found no matching active incidents. How would you like to proceed?",
+        ? `ANALYSIS COMPLETE: ${incidentData.title.toUpperCase()}. RESPONSE OPTIONS GENERATED.`
+        : "NO MATCHING INCIDENT FOUND. AWAITING COMMAND.",
       type: incidentData ? "operational-card" : "text",
       incidentData: incidentData || undefined,
     };
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
     console.error("Error in Hermes API Bridge:", error);
     return NextResponse.json(
       { 
-        content: "Operational Bridge Error: Failed to communicate with GCP services.", 
+        content: "SYSTEM ERROR: CONNECTION FAILED. RETRY INITIATED.", 
         type: "text" 
       },
       { status: 500 }

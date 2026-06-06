@@ -49,7 +49,7 @@ export function useAgent() {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "agent",
-        content: "I'm sorry, I'm having trouble connecting to my systems right now. Please try again in a moment.",
+        content: "SYSTEM ERROR: CONNECTION FAILED. RETRY INITIATED.",
         type: "text",
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -59,23 +59,70 @@ export function useAgent() {
   };
 
   const handleActionDecision = (actionId: number, decision: 'approved' | 'modified') => {
-    const confirmation: Message = {
-      id: Date.now().toString(),
-      role: "agent",
-      content: `Action ${decision === 'approved' ? 'approved' : 'modified'}. Execution Begins.`,
-      type: "text",
-    };
-    setMessages(prev => [...prev, confirmation]);
+    setMessages(prev => {
+      const newMessages = [...prev];
+      const incidentMessageIndex = [...newMessages].reverse().findIndex(m => m.type === "operational-card" && m.incidentData);
+      const actualIndex = incidentMessageIndex !== -1 ? newMessages.length - 1 - incidentMessageIndex : -1;
+      
+      let action;
+      if (actualIndex !== -1) {
+        const incidentMessage = newMessages[actualIndex];
+        action = incidentMessage.incidentData?.responseOptions.find(a => a.id === actionId);
+        
+        if (action) {
+          newMessages[actualIndex] = {
+            ...incidentMessage,
+            incidentData: {
+              ...incidentMessage.incidentData!,
+              executionStatus: `Executing approved plan: ${action.title}`
+            }
+          };
+        }
+      }
+
+      const confirmation: Message = {
+        id: Date.now().toString(),
+        role: "agent",
+        content: `EXECUTION COMMENCED: ${action?.title.toUpperCase() || 'ACTION ' + actionId}. STATUS TRACKING ACTIVE.`,
+        type: "execution-checklist",
+        checklist: action?.steps || [{ text: "Executing strategy", status: "in-progress" }]
+      };
+
+      return [...newMessages, confirmation];
+    });
   };
 
   const handleCustomPlan = (plan: string) => {
-    const confirmation: Message = {
-      id: Date.now().toString(),
-      role: "agent",
-      content: `Custom plan accepted: "${plan}". Execution Begins.`,
-      type: "text",
-    };
-    setMessages(prev => [...prev, confirmation]);
+    setMessages(prev => {
+      const newMessages = [...prev];
+      const incidentMessageIndex = [...newMessages].reverse().findIndex(m => m.type === "operational-card" && m.incidentData);
+      const actualIndex = incidentMessageIndex !== -1 ? newMessages.length - 1 - incidentMessageIndex : -1;
+      
+      if (actualIndex !== -1) {
+        const incidentMessage = newMessages[actualIndex];
+        newMessages[actualIndex] = {
+          ...incidentMessage,
+          incidentData: {
+            ...incidentMessage.incidentData!,
+            executionStatus: `Executing custom plan: ${plan}`
+          }
+        };
+      }
+
+      const confirmation: Message = {
+        id: Date.now().toString(),
+        role: "agent",
+        content: `CUSTOM STRATEGY ADOPTED: "${plan.toUpperCase()}". INITIALIZING PHASES.`,
+        type: "execution-checklist",
+        checklist: [
+          { text: "Resource allocation for custom plan", status: "completed" },
+          { text: "Executing user-defined strategy", status: "in-progress" },
+          { text: "Verifying operational outcome", status: "pending" }
+        ]
+      };
+
+      return [...newMessages, confirmation];
+    });
   };
 
   const handleGlobalDecision = (type: 'escalate' | 'resolve') => {
@@ -83,8 +130,8 @@ export function useAgent() {
       id: Date.now().toString(),
       role: "agent",
       content: type === 'escalate' 
-        ? "Incident escalated to the Operations Director. They will be notified immediately."
-        : "Incident marked as resolved. Finalizing report and updating status across all dashboards.",
+        ? "PROTOCOL ESCALATION: OPERATIONS DIRECTOR NOTIFIED. DATA SYNC IN PROGRESS."
+        : "INCIDENT RESOLVED. ARCHIVING LOGS AND UPDATING DASHBOARDS.",
       type: "text",
     };
     setMessages(prev => [...prev, confirmation]);
