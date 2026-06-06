@@ -82,7 +82,7 @@ export function OperationalCard({
         <div>
           <h3 className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
             <Info size={16} className="text-blue-500" />
-            Operational Situation
+            Summary
           </h3>
           <p className="text-base text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-100 shadow-inner">
             {incident.description}

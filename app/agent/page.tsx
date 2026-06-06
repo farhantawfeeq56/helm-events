@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useAgent } from "@/hooks/use-agent";
 import { MessageItem, TypingIndicator } from "@/components/agent/message-item";
+import { EventContext } from "@/components/agent/event-context";
 import { operationalActions } from "@/lib/constants";
 
 export default function AgentPage() {
@@ -34,7 +35,10 @@ export default function AgentPage() {
     const incidentsMap = new Map();
     messages.forEach(msg => {
       if (msg.incidentData) {
-        incidentsMap.set(msg.incidentData.id, msg.incidentData);
+        incidentsMap.set(msg.incidentData.id, {
+          ...msg.incidentData,
+          messageId: msg.id
+        });
       }
     });
     return Array.from(incidentsMap.values());
@@ -42,6 +46,13 @@ export default function AgentPage() {
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const scrollToMessage = (messageId: string) => {
+    const element = document.getElementById(`message-${messageId}`);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   };
 
   useEffect(() => {
@@ -206,16 +217,17 @@ export default function AgentPage() {
 
         {/* Right Sidebar - Incident List */}
         <div className="hidden w-80 flex-col border-l border-slate-200 bg-white lg:flex">
-          <div className="p-4 border-b border-slate-100">
+          <EventContext />
+          <div className="p-4 border-b border-slate-100 flex-1 overflow-hidden flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xs font-black uppercase tracking-widest text-slate-400">Active Incidents</h2>
               <Badge className="bg-red-50 text-red-600 border-red-100 font-bold">{reportedIncidents.length}</Badge>
             </div>
-            <div className="space-y-2 max-h-[calc(100vh-12rem)] overflow-y-auto pr-1">
+            <div className="space-y-2 overflow-y-auto pr-1 flex-1">
               {reportedIncidents.map((incident) => (
                 <button
                   key={incident.id}
-                  onClick={() => setInput(`Analyze incident: ${incident.title}`)}
+                  onClick={() => scrollToMessage(incident.messageId)}
                   className="w-full text-left p-3 rounded-xl border border-slate-100 hover:border-sky-200 hover:bg-sky-50 transition-all group"
                 >
                   <div className="flex items-center justify-between mb-1">
