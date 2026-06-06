@@ -2,7 +2,11 @@ export type Severity = "Critical" | "High" | "Medium" | "Low";
 
 export interface RecommendedAction {
   id: number;
-  action: string;
+  title: string;
+  summary: string;
+  pros: string[];
+  cons: string[];
+  operationalConsiderations: string;
   status: "pending" | "approved" | "declined";
   priority: "high" | "medium" | "low";
 }
@@ -58,9 +62,36 @@ export const mockIncidents: Incident[] = [
     description: "Keynote speaker Dr. Sarah Chen is stuck in traffic and will be 20 minutes late for her 10:00 AM session.",
     impactAnalysis: ["Main Stage Schedule", "Attendee Flow", "Live Stream Timing"],
     responseOptions: [
-      { id: 1, action: "Push back keynote by 20 minutes", status: "pending", priority: "high" },
-      { id: 2, action: "Extend morning networking break", status: "pending", priority: "medium" },
-      { id: 3, action: "Notify attendees via mobile app", status: "pending", priority: "high" },
+      {
+        id: 1,
+        title: "Push back keynote by 20 minutes",
+        summary: "Shift the entire Main Stage schedule by 20 minutes to allow the keynote speaker to deliver her full presentation.",
+        pros: ["Ensures all attendees see the full keynote", "Reduces speaker stress"],
+        cons: ["Impacts lunch break timing", "May cause conflicts for attendees with afternoon meetings"],
+        operationalConsiderations: "Requires immediate coordination with catering to delay lunch service by 20 minutes.",
+        status: "pending",
+        priority: "high"
+      },
+      {
+        id: 2,
+        title: "Extend morning networking break",
+        summary: "Keep attendees in the networking area for an additional 20 minutes while the speaker arrives and sets up.",
+        pros: ["Increases networking opportunities", "Maintains high energy in the expo hall"],
+        cons: ["May lead to attendee restlessness", "Crowding in the coffee area"],
+        operationalConsiderations: "Request additional coffee and snacks from catering for the extended period.",
+        status: "pending",
+        priority: "medium"
+      },
+      {
+        id: 3,
+        title: "Notify attendees via mobile app",
+        summary: "Send a real-time push notification to all attendees informing them of the schedule change.",
+        pros: ["Provides immediate transparency", "Reduces confusion at the Main Stage doors"],
+        cons: ["May cause minor frustration for early-arriving attendees"],
+        operationalConsiderations: "Draft the message to focus on the 'extra networking time' to keep the tone positive.",
+        status: "pending",
+        priority: "high"
+      },
     ],
     riskAssessment: {
       level: "Medium",
@@ -84,8 +115,26 @@ export const mockIncidents: Incident[] = [
     description: "Lead sponsor 'TechCorp' requested additional power outlets for their booth in the Expo Hall.",
     impactAnalysis: ["Expo Hall Infrastructure", "Sponsor Satisfaction"],
     responseOptions: [
-      { id: 4, action: "Deploy electrical team to Booth 42", status: "pending", priority: "medium" },
-      { id: 5, action: "Verify load capacity with venue", status: "pending", priority: "high" },
+      {
+        id: 4,
+        title: "Deploy electrical team to Booth 42",
+        summary: "Send the onsite electrical team to TechCorp's booth to install additional power strips and verify load requirements.",
+        pros: ["Directly addresses sponsor needs", "Maintains positive relationship with key sponsor"],
+        cons: ["May temporarily block aisle during installation"],
+        operationalConsiderations: "Ensure the team works quickly to avoid disruption during peak hall hours.",
+        status: "pending",
+        priority: "medium"
+      },
+      {
+        id: 5,
+        title: "Verify load capacity with venue",
+        summary: "Confirm with venue engineering that the additional power request won't trip breakers in the Expo Hall B sector.",
+        pros: ["Prevents widespread power outages", "Ensures compliance with fire safety regulations"],
+        cons: ["Adds a small delay to the response"],
+        operationalConsiderations: "Have the venue engineer on standby while the electrical team performs the installation.",
+        status: "pending",
+        priority: "high"
+      },
     ],
     riskAssessment: {
       level: "Low",
@@ -108,8 +157,26 @@ export const mockIncidents: Incident[] = [
     description: "Three volunteers for the registration desk failed to show up for their shift.",
     impactAnalysis: ["Registration Wait Times", "Entrance Logistics"],
     responseOptions: [
-      { id: 6, action: "Reassign volunteers from Session Support", status: "pending", priority: "medium" },
-      { id: 7, action: "Call backup volunteer list", status: "pending", priority: "medium" },
+      {
+        id: 6,
+        title: "Reassign volunteers from Session Support",
+        summary: "Move two volunteers from the relatively quiet breakout session track to the registration desk.",
+        pros: ["Immediate fix for registration bottlenecks", "Utilizes existing onsite staff"],
+        cons: ["Reduces support availability for breakout speakers"],
+        operationalConsiderations: "Brief the reassigned volunteers on registration procedures before they start.",
+        status: "pending",
+        priority: "medium"
+      },
+      {
+        id: 7,
+        title: "Call backup volunteer list",
+        summary: "Contact the standby volunteer pool to fill the missing slots for the remainder of the day.",
+        pros: ["Restores full staffing levels", "Doesn't compromise other event areas"],
+        cons: ["Takes 30-60 minutes for backup staff to arrive"],
+        operationalConsiderations: "Offer additional meal vouchers as an incentive for last-minute callers.",
+        status: "pending",
+        priority: "medium"
+      },
     ],
     riskAssessment: {
       level: "Low",
@@ -132,9 +199,36 @@ export const mockIncidents: Incident[] = [
     description: "Wi-Fi connectivity lost in Hall B, affecting several workshops and live demos.",
     impactAnalysis: ["Workshop Connectivity", "Demo Performance", "Attendee Experience"],
     responseOptions: [
-      { id: 8, action: "Switch to backup cellular hotspots", status: "pending", priority: "high" },
-      { id: 9, action: "Contact venue IT department", status: "pending", priority: "high" },
-      { id: 10, action: "Post status update on event portal", status: "pending", priority: "medium" },
+      {
+        id: 8,
+        title: "Switch to backup cellular hotspots",
+        summary: "Deploy portable 5G hotspots to critical demo stations in Hall B to restore immediate connectivity.",
+        pros: ["Restores critical demo functionality", "Independent of venue infrastructure"],
+        cons: ["Limited bandwidth compared to fiber Wi-Fi", "Requires manual setup at each booth"],
+        operationalConsiderations: "Prioritize booths with scheduled live presentations over general expo stalls.",
+        status: "pending",
+        priority: "high"
+      },
+      {
+        id: 9,
+        title: "Contact venue IT department",
+        summary: "Escalate the issue to the venue's lead network engineer to identify if it's a local hardware failure or ISP outage.",
+        pros: ["Addresses the root cause", "Necessary for long-term resolution"],
+        cons: ["Resolution time is outside of our direct control"],
+        operationalConsiderations: "Ask for an ETR (Estimated Time to Repair) every 15 minutes to manage expectations.",
+        status: "pending",
+        priority: "high"
+      },
+      {
+        id: 10,
+        title: "Post status update on event portal",
+        summary: "Add a notice to the digital signage and event app acknowledging the issue and providing progress updates.",
+        pros: ["Reduces support requests", "Shows proactive management"],
+        cons: ["Increases awareness of the failure among unaffected attendees"],
+        operationalConsiderations: "Keep updates brief and focused on the actions being taken.",
+        status: "pending",
+        priority: "medium"
+      },
     ],
     riskAssessment: {
       level: "High",
@@ -158,9 +252,36 @@ export const mockIncidents: Incident[] = [
     description: "Hall B is double-booked for the 'AI Ethics' workshop and the 'Cloud Computing' seminar at 2:00 PM.",
     impactAnalysis: ["Hall B Schedule", "Attendee Satisfaction", "Speaker Logistics"],
     responseOptions: [
-      { id: 11, action: "Move 'Cloud Computing' to Room 101", status: "pending", priority: "high" },
-      { id: 12, action: "Notify speakers of both sessions", status: "pending", priority: "high" },
-      { id: 13, action: "Update signage at Hall B", status: "pending", priority: "medium" },
+      {
+        id: 11,
+        title: "Move 'Cloud Computing' to Room 101",
+        summary: "Relocate the Cloud Computing seminar to the smaller but available Room 101.",
+        pros: ["Resolves the booking conflict", "Both sessions can proceed at scheduled times"],
+        cons: ["Room 101 has 30% less capacity", "Requires attendees to walk to another wing"],
+        operationalConsiderations: "Station a staff member at Hall B to redirect attendees to Room 101.",
+        status: "pending",
+        priority: "high"
+      },
+      {
+        id: 12,
+        title: "Notify speakers of both sessions",
+        summary: "Immediately inform both speakers of the conflict and the proposed resolution to ensure their cooperation.",
+        pros: ["Maintains speaker confidence", "Ensures technical needs are met in new room"],
+        cons: ["May cause stress for the relocating speaker"],
+        operationalConsiderations: "Offer technical assistant to help the Cloud Computing speaker move their materials.",
+        status: "pending",
+        priority: "high"
+      },
+      {
+        id: 13,
+        title: "Update signage at Hall B",
+        summary: "Update the digital and physical signage outside Hall B to reflect the new room assignment for Cloud Computing.",
+        pros: ["Reduces attendee confusion", "Provides clear wayfinding"],
+        cons: ["Requires rapid production of physical signs if digital ones fail"],
+        operationalConsiderations: "Use 'Move' directional arrows to make the new location clear.",
+        status: "pending",
+        priority: "medium"
+      },
     ],
     riskAssessment: {
       level: "Medium",
@@ -183,8 +304,26 @@ export const mockIncidents: Incident[] = [
     description: "The 'Future of AI' panel needs to be shifted from 3:30 PM to 4:00 PM due to a technical setup requirement.",
     impactAnalysis: ["Session Timing", "Room Availability"],
     responseOptions: [
-      { id: 14, action: "Push back start time to 4:00 PM", status: "pending", priority: "low" },
-      { id: 15, action: "Update mobile app and website", status: "pending", priority: "low" },
+      {
+        id: 14,
+        title: "Push back start time to 4:00 PM",
+        summary: "Formally delay the panel start time to allow for complex technical stage setup.",
+        pros: ["Ensures technical setup is perfect", "Avoids awkward mid-session technical failures"],
+        cons: ["Shortens the Q&A portion if the room is needed later"],
+        operationalConsiderations: "Check if the following session in the same room can also be shifted if needed.",
+        status: "pending",
+        priority: "low"
+      },
+      {
+        id: 15,
+        title: "Update mobile app and website",
+        summary: "Sync the new 4:00 PM start time to the attendee-facing app and the public schedule website.",
+        pros: ["Provides 'single source of truth' for schedule", "Reduces manual inquiries at info desks"],
+        cons: ["None"],
+        operationalConsiderations: "Verify that the sync completes across all caching layers of the website.",
+        status: "pending",
+        priority: "low"
+      },
     ],
     riskAssessment: {
       level: "Low",
