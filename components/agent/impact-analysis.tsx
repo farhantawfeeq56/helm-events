@@ -11,7 +11,7 @@ export function ImpactAnalysis({ impacts }: ImpactAnalysisProps) {
     <div>
       <h3 className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
         <Pulse size={16} className="text-orange-500" />
-        Impact Analysis
+        Impact
       </h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {impacts.map((item, idx) => (

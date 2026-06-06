@@ -16,8 +16,9 @@ interface MessageItemProps {
 export function MessageItem({ message, onActionDecision, onCustomPlan, onGlobalDecision }: MessageItemProps) {
   return (
     <div
+      id={`message-${message.id}`}
       className={cn(
-        "flex w-full flex-col",
+        "flex w-full flex-col scroll-mt-10",
         message.role === "user" ? "items-end" : "items-start"
       )}
     >
