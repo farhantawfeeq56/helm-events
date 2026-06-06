@@ -4,9 +4,8 @@ import {
   Info,
   Warning,
 } from "@phosphor-icons/react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Incident } from "@/lib/hermes";
 import { IconMap } from "@/lib/constants";
@@ -37,13 +36,15 @@ export const getStatusColor = (status: string) => {
 
 interface OperationalCardProps {
   incident: Incident;
-  onActionDecision: (actionId: number, decision: 'approved' | 'declined') => void;
+  onActionDecision: (actionId: number, decision: 'approved' | 'modified') => void;
+  onCustomPlan: (plan: string) => void;
   onGlobalDecision: (type: 'escalate' | 'resolve') => void;
 }
 
 export function OperationalCard({ 
   incident, 
   onActionDecision, 
+  onCustomPlan,
   onGlobalDecision 
 }: OperationalCardProps) {
   const Icon = IconMap[incident.iconName] || Warning;
@@ -93,7 +94,11 @@ export function OperationalCard({
           <RiskAssessment risk={incident.riskAssessment} />
         </div>
 
-        <ResponseOptions options={incident.responseOptions} onActionDecision={onActionDecision} />
+        <ResponseOptions 
+          options={incident.responseOptions} 
+          onActionDecision={onActionDecision} 
+          onCustomPlan={onCustomPlan}
+        />
         
         <CommunicationPlan communications={incident.communications} />
 
@@ -109,22 +114,6 @@ export function OperationalCard({
           </div>
         </div>
       </CardContent>
-
-      <CardFooter className="bg-slate-50 border-t border-slate-100 p-6 flex gap-4">
-        <Button 
-          variant="outline" 
-          className="h-12 flex-1 bg-white border-slate-200 text-slate-700 font-bold hover:bg-slate-100 rounded-2xl shadow-sm transition-all"
-          onClick={() => onGlobalDecision('escalate')}
-        >
-          Escalate to Command
-        </Button>
-        <Button 
-          className="h-12 flex-1 bg-slate-900 text-white font-bold hover:bg-slate-800 rounded-2xl shadow-lg transition-all"
-          onClick={() => onGlobalDecision('resolve')}
-        >
-          Resolve Incident
-        </Button>
-      </CardFooter>
     </Card>
   );
 }

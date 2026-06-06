@@ -26,6 +26,7 @@ export default function AgentPage() {
     isTyping, 
     handleSendMessage, 
     handleActionDecision, 
+    handleCustomPlan,
     handleGlobalDecision 
   } = useAgent();
 
@@ -146,6 +147,7 @@ export default function AgentPage() {
                       key={message.id} 
                       message={message} 
                       onActionDecision={handleActionDecision}
+                      onCustomPlan={handleCustomPlan}
                       onGlobalDecision={handleGlobalDecision}
                     />
                   ))}
