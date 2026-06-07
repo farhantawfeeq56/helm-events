@@ -11,8 +11,12 @@ import { Facility } from "@/models/facility";
 import { APILog } from "@/models/api-log";
 import { SystemHealth } from "@/models/system-health";
 import { Analytics } from "@/models/analytics";
+import { Team } from "@/models/team";
+import { Task } from "@/models/task";
+import { Incident } from "@/models/incident";
 import { CollectionView } from "@/components/operations/collection-view";
 import { Badge } from "@/components/ui/badge";
+import { LinkedRecord, LinkedRecords } from "@/components/operations/linked-record";
 import Link from "next/link";
 import {
   Users,
@@ -29,6 +33,9 @@ import {
   CheckCircle,
   Buildings,
   IdentificationCard,
+  Briefcase,
+  CheckSquare,
+  Warning,
 } from "@phosphor-icons/react/dist/ssr";
 
 export const dynamic = "force-dynamic";
@@ -36,10 +43,10 @@ export const dynamic = "force-dynamic";
 export default async function OperationsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ collection?: string }>;
+  searchParams: Promise<{ collection?: string; id?: string }>;
 }) {
   await connectToDatabase();
-  const { collection } = await searchParams;
+  const { collection, id } = await searchParams;
 
   // Fetch counts
   const [
@@ -52,6 +59,9 @@ export default async function OperationsPage({
     attendeeCount,
     organizerCount,
     facilityCount,
+    teamCount,
+    taskCount,
+    incidentCount,
   ] = await Promise.all([
     Event.countDocuments(),
     Speaker.countDocuments(),
@@ -62,6 +72,9 @@ export default async function OperationsPage({
     Attendee.countDocuments(),
     Organizer.countDocuments(),
     Facility.countDocuments(),
+    Team.countDocuments(),
+    Task.countDocuments(),
+    Incident.countDocuments(),
   ]);
 
   // Fetch latest event for overview
@@ -209,6 +222,28 @@ export default async function OperationsPage({
 
   const sessionColumns = [
     { header: "Title", accessorKey: "title" as const },
+    {
+      header: "Speakers",
+      accessorKey: "speakerIds" as const,
+      cell: (item: any) => (
+        <LinkedRecords
+          ids={item.speakerIds}
+          collection="speakers"
+          labels={item.speakerIds?.map((s: any) => typeof s === 'object' ? s.fullName : s)}
+        />
+      ),
+    },
+    {
+      header: "Room",
+      accessorKey: "roomId" as const,
+      cell: (item: any) => (
+        <LinkedRecord
+          id={typeof item.roomId === 'object' ? item.roomId._id : item.roomId}
+          collection="rooms"
+          label={typeof item.roomId === 'object' ? item.roomId.name : item.roomId}
+        />
+      ),
+    },
     { header: "Track", accessorKey: "track" as const },
     {
       header: "Start",
@@ -229,6 +264,128 @@ export default async function OperationsPage({
     { header: "Capacity", accessorKey: "capacity" as const },
     { header: "Location", accessorKey: "location" as const },
     { header: "Setup", accessorKey: "setupStyle" as const },
+  ];
+
+  const teamColumns = [
+    { header: "Name", accessorKey: "name" as const },
+    { header: "Description", accessorKey: "description" as const },
+    {
+      header: "Lead",
+      accessorKey: "leadId" as const,
+      cell: (item: any) => (
+        <LinkedRecord
+          id={typeof item.leadId === 'object' ? item.leadId._id : item.leadId}
+          collection={item.leadModel === 'Volunteer' ? 'volunteers' : 'organizers'}
+          label={typeof item.leadId === 'object' ? item.leadId.fullName : item.leadId}
+        />
+      ),
+    },
+    {
+      header: "Members",
+      accessorKey: "memberIds" as const,
+      cell: (item: any) => (
+        <LinkedRecords
+          ids={item.memberIds}
+          collection="volunteers"
+          labels={item.memberIds?.map((m: any) => typeof m === 'object' ? m.fullName : m)}
+        />
+      ),
+    },
+  ];
+
+  const taskColumns = [
+    { header: "Title", accessorKey: "title" as const },
+    {
+      header: "Assigned To",
+      accessorKey: "assignedToId" as const,
+      cell: (item: any) => (
+        <LinkedRecord
+          id={typeof item.assignedToId === 'object' ? item.assignedToId._id : item.assignedToId}
+          collection={item.assigneeModel === 'Volunteer' ? 'volunteers' : 'teams'}
+          label={typeof item.assignedToId === 'object' ? (item.assigneeModel === 'Volunteer' ? item.assignedToId.fullName : item.assignedToId.name) : item.assignedToId}
+        />
+      ),
+    },
+    {
+      header: "Status",
+      accessorKey: "status" as const,
+      cell: (item: any) => (
+        <Badge
+          className={
+            item.status === "Completed"
+              ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+              : item.status === "In Progress"
+              ? "bg-blue-50 text-blue-700 border-blue-100"
+              : "bg-slate-50 text-slate-700 border-slate-100"
+          }
+        >
+          {item.status}
+        </Badge>
+      ),
+    },
+    {
+      header: "Priority",
+      accessorKey: "priority" as const,
+      cell: (item: any) => (
+        <Badge
+          className={
+            item.priority === "High"
+              ? "bg-rose-50 text-rose-700 border-rose-100"
+              : item.priority === "Medium"
+              ? "bg-amber-50 text-amber-700 border-amber-100"
+              : "bg-slate-50 text-slate-700 border-slate-100"
+          }
+        >
+          {item.priority}
+        </Badge>
+      ),
+    },
+  ];
+
+  const incidentColumns = [
+    { header: "Title", accessorKey: "title" as const },
+    {
+      header: "Severity",
+      accessorKey: "severity" as const,
+      cell: (item: any) => (
+        <Badge
+          className={
+            item.severity === "Critical"
+              ? "bg-rose-600 text-white border-rose-700"
+              : item.severity === "High"
+              ? "bg-rose-50 text-rose-700 border-rose-100"
+              : item.severity === "Medium"
+              ? "bg-amber-50 text-amber-700 border-amber-100"
+              : "bg-blue-50 text-blue-700 border-blue-100"
+          }
+        >
+          {item.severity}
+        </Badge>
+      ),
+    },
+    { header: "Status", accessorKey: "status" as const },
+    {
+      header: "Location",
+      accessorKey: "locationId" as const,
+      cell: (item: any) => (
+        <LinkedRecord
+          id={typeof item.locationId === 'object' ? item.locationId._id : item.locationId}
+          collection="rooms"
+          label={typeof item.locationId === 'object' ? item.locationId.name : item.locationId}
+        />
+      ),
+    },
+    {
+      header: "Assigned Team",
+      accessorKey: "assignedTeamId" as const,
+      cell: (item: any) => (
+        <LinkedRecord
+          id={typeof item.assignedTeamId === 'object' ? item.assignedTeamId._id : item.assignedTeamId}
+          collection="teams"
+          label={typeof item.assignedTeamId === 'object' ? item.assignedTeamId.name : item.assignedTeamId}
+        />
+      ),
+    },
   ];
 
   const organizerColumns = [
@@ -371,6 +528,28 @@ export default async function OperationsPage({
 
   const sessionFields = [
     { name: "title", label: "Title", type: "text" },
+    {
+      name: "eventId",
+      label: "Event",
+      type: "relationship",
+      collectionName: "events",
+      displayField: "name",
+    },
+    {
+      name: "speakerIds",
+      label: "Speakers",
+      type: "relationship",
+      collectionName: "speakers",
+      displayField: "fullName",
+      isMulti: true,
+    },
+    {
+      name: "roomId",
+      label: "Room",
+      type: "relationship",
+      collectionName: "rooms",
+      displayField: "name",
+    },
     { name: "track", label: "Track", type: "text" },
     { name: "startTime", label: "Start Time", type: "text", placeholder: "YYYY-MM-DD HH:MM" },
     { name: "endTime", label: "End Time", type: "text", placeholder: "YYYY-MM-DD HH:MM" },
@@ -384,6 +563,131 @@ export default async function OperationsPage({
         { label: "Live", value: "live" },
         { label: "Completed", value: "completed" },
       ],
+    },
+  ];
+
+  const teamFields = [
+    { name: "name", label: "Team Name", type: "text" },
+    { name: "description", label: "Description", type: "textarea" },
+    {
+      name: "leadModel",
+      label: "Lead Type",
+      type: "select",
+      options: [
+        { label: "Volunteer", value: "Volunteer" },
+        { label: "Organizer", value: "Organizer" },
+      ],
+    },
+    {
+      name: "leadId",
+      label: "Team Lead",
+      type: "relationship",
+      collectionName: "volunteers", // Default, might need dynamic change but for now this is okay
+      displayField: "fullName",
+    },
+    {
+      name: "memberIds",
+      label: "Team Members",
+      type: "relationship",
+      collectionName: "volunteers",
+      displayField: "fullName",
+      isMulti: true,
+    },
+  ];
+
+  const taskFields = [
+    { name: "title", label: "Title", type: "text" },
+    { name: "description", label: "Description", type: "textarea" },
+    {
+      name: "assigneeModel",
+      label: "Assignee Type",
+      type: "select",
+      options: [
+        { label: "Volunteer", value: "Volunteer" },
+        { label: "Team", value: "Team" },
+      ],
+    },
+    {
+      name: "assignedToId",
+      label: "Assigned To",
+      type: "relationship",
+      collectionName: "volunteers",
+      displayField: "fullName",
+    },
+    {
+      name: "status",
+      label: "Status",
+      type: "select",
+      options: [
+        { label: "Pending", value: "Pending" },
+        { label: "In Progress", value: "In Progress" },
+        { label: "Completed", value: "Completed" },
+      ],
+    },
+    {
+      name: "priority",
+      label: "Priority",
+      type: "select",
+      options: [
+        { label: "Low", value: "Low" },
+        { label: "Medium", value: "Medium" },
+        { label: "High", value: "High" },
+      ],
+    },
+    { name: "dueDate", label: "Due Date", type: "text", placeholder: "YYYY-MM-DD" },
+    {
+      name: "relatedIncidentId",
+      label: "Related Incident",
+      type: "relationship",
+      collectionName: "incidents",
+      displayField: "title",
+    },
+  ];
+
+  const incidentFields = [
+    { name: "title", label: "Title", type: "text" },
+    {
+      name: "severity",
+      label: "Severity",
+      type: "select",
+      options: [
+        { label: "Low", value: "Low" },
+        { label: "Medium", value: "Medium" },
+        { label: "High", value: "High" },
+        { label: "Critical", value: "Critical" },
+      ],
+    },
+    { name: "status", label: "Status", type: "text" },
+    { name: "description", label: "Description", type: "textarea" },
+    {
+      name: "locationId",
+      label: "Location (Room)",
+      type: "relationship",
+      collectionName: "rooms",
+      displayField: "name",
+    },
+    {
+      name: "assignedTeamId",
+      label: "Assigned Team",
+      type: "relationship",
+      collectionName: "teams",
+      displayField: "name",
+    },
+    {
+      name: "reporterModel",
+      label: "Reporter Type",
+      type: "select",
+      options: [
+        { label: "Volunteer", value: "Volunteer" },
+        { label: "Organizer", value: "Organizer" },
+      ],
+    },
+    {
+      name: "reportedById",
+      label: "Reported By",
+      type: "relationship",
+      collectionName: "volunteers",
+      displayField: "fullName",
     },
   ];
 
@@ -479,6 +783,15 @@ export default async function OperationsPage({
       case "facilities":
         viewProps = { title: "Facilities", collectionName: "facilities", columns: facilityColumns, searchKey: "name", fields: facilityFields };
         break;
+      case "teams":
+        viewProps = { title: "Teams", collectionName: "teams", columns: teamColumns, searchKey: "name", fields: teamFields };
+        break;
+      case "tasks":
+        viewProps = { title: "Tasks", collectionName: "tasks", columns: taskColumns, searchKey: "title", fields: taskFields };
+        break;
+      case "incidents":
+        viewProps = { title: "Incidents", collectionName: "incidents", columns: incidentColumns, searchKey: "title", fields: incidentFields };
+        break;
       case "logs":
         viewProps = { title: "API Logs", collectionName: "logs", columns: logColumns, searchKey: "path", fields: logFields };
         break;
@@ -488,6 +801,10 @@ export default async function OperationsPage({
       case "analytics":
         viewProps = { title: "Analytics", collectionName: "analytics", columns: analyticsColumns, searchKey: "name", fields: analyticsFields };
         break;
+    }
+
+    if (viewProps) {
+      viewProps.initialSearchTerm = id || "";
     }
 
     return (
@@ -606,6 +923,30 @@ export default async function OperationsPage({
           count: facilityCount,
           color: "text-emerald-600",
           bg: "bg-emerald-50",
+        },
+        {
+          id: "teams",
+          name: "Teams",
+          icon: Briefcase,
+          count: teamCount,
+          color: "text-indigo-600",
+          bg: "bg-indigo-50",
+        },
+        {
+          id: "tasks",
+          name: "Tasks",
+          icon: CheckSquare,
+          count: taskCount,
+          color: "text-amber-600",
+          bg: "bg-amber-50",
+        },
+        {
+          id: "incidents",
+          name: "Incidents",
+          icon: Warning,
+          count: incidentCount,
+          color: "text-rose-600",
+          bg: "bg-rose-50",
         },
       ],
     },

@@ -7,6 +7,9 @@ export type EventStatus = "draft" | "published" | "completed";
 export type SessionStatus = "draft" | "confirmed" | "live" | "completed";
 export type HealthStatus = "Operational" | "Degraded" | "Down";
 export type Trend = "up" | "down" | "neutral";
+export type TaskStatus = "Pending" | "In Progress" | "Completed";
+export type TaskPriority = "Low" | "Medium" | "High";
+export type IncidentSeverity = "Critical" | "High" | "Medium" | "Low";
 
 export interface Speaker {
   _id: string;
@@ -95,6 +98,40 @@ export interface Room {
   location: string;
   setupStyle: string;
   avNotes: string;
+}
+
+export interface Team {
+  _id: string;
+  name: string;
+  description: string;
+  leadId: string;
+  leadModel: "Volunteer" | "Organizer";
+  memberIds: string[];
+}
+
+export interface Task {
+  _id: string;
+  title: string;
+  description: string;
+  assignedToId: string;
+  assigneeModel: "Volunteer" | "Team";
+  status: TaskStatus;
+  priority: TaskPriority;
+  dueDate: string;
+  relatedIncidentId?: string;
+}
+
+export interface Incident {
+  _id: string;
+  title: string;
+  severity: IncidentSeverity;
+  status: string;
+  description: string;
+  impactAnalysis: string[];
+  reportedById: string;
+  reporterModel: "Volunteer" | "Organizer";
+  assignedTeamId: string;
+  locationId: string;
 }
 
 export interface APILog {

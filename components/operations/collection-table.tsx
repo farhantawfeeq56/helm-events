@@ -53,6 +53,10 @@ export function CollectionTable<T extends { _id?: string; id?: string }>({
 
   const filteredData = useMemo(() => {
     return data.filter((item) => {
+      // Also check against _id for direct navigation
+      if (item._id === searchTerm || item.id === searchTerm) {
+        return true;
+      }
       const value = item[searchKey];
       if (typeof value === "string") {
         return value.toLowerCase().includes(searchTerm.toLowerCase());

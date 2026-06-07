@@ -14,6 +14,7 @@ interface CollectionViewProps<T> {
   columns: Column<T>[];
   searchKey: keyof T;
   fields: any[];
+  initialSearchTerm?: string;
 }
 
 export function CollectionView<T extends { _id: string; id?: string }>({
@@ -22,9 +23,10 @@ export function CollectionView<T extends { _id: string; id?: string }>({
   columns,
   searchKey,
   fields,
+  initialSearchTerm = "",
 }: CollectionViewProps<T>) {
   const [data, setData] = useState<T[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<T | null>(null);
@@ -48,6 +50,12 @@ export function CollectionView<T extends { _id: string; id?: string }>({
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    if (initialSearchTerm) {
+      setSearchTerm(initialSearchTerm);
+    }
+  }, [initialSearchTerm]);
 
   const handleAddRecord = () => {
     setEditingRecord(null);

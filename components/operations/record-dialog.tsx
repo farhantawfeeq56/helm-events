@@ -19,13 +19,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RelationshipSelect } from "./relationship-select";
 
 interface Field {
   name: string;
   label: string;
-  type: "text" | "email" | "number" | "select" | "textarea";
+  type: "text" | "email" | "number" | "select" | "textarea" | "relationship";
   options?: { label: string; value: string }[];
   placeholder?: string;
+  collectionName?: string;
+  isMulti?: boolean;
+  displayField?: string;
 }
 
 interface RecordDialogProps {
@@ -99,6 +103,15 @@ export function RecordDialog({
                     ))}
                   </SelectContent>
                 </Select>
+              ) : field.type === "relationship" ? (
+                <RelationshipSelect
+                  collectionName={field.collectionName!}
+                  displayField={field.displayField || "name"}
+                  value={formData[field.name]}
+                  onChange={(value) => handleChange(field.name, value)}
+                  placeholder={field.placeholder}
+                  isMulti={field.isMulti}
+                />
               ) : field.type === "textarea" ? (
                 <Textarea
                   id={field.name}

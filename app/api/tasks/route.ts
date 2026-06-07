@@ -1,0 +1,32 @@
+import { NextResponse } from "next/server";
+import { connectToDatabase } from "@/lib/db";
+import { Task } from "@/models/task";
+
+export async function GET() {
+  try {
+    await connectToDatabase();
+    const tasks = await Task.find({})
+      .populate("assignedToId")
+      .populate("relatedIncidentId")
+      .sort({ createdAt: -1 });
+    return NextResponse.json({ success: true, data: tasks });
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, error: "Failed to fetch tasks" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    await connectToDatabase();
+    const payload = await request.json();
+    const task = await Task.create(payload);
+    return NextResponse.json({ success: true, data: task }, { status: 201 });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Unable to create task.";
+    return NextResponse.json({ success: false, error: message }, { status: 400 });
+  }
+}

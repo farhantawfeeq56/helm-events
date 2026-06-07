@@ -5,7 +5,10 @@ import { Session } from "@/models/session";
 export async function GET() {
   try {
     await connectToDatabase();
-    const sessions = await Session.find({}).sort({ startTime: 1 });
+    const sessions = await Session.find({})
+      .populate("speakerIds")
+      .populate("roomId")
+      .sort({ startTime: 1 });
     return NextResponse.json({ success: true, data: sessions });
   } catch (error) {
     return NextResponse.json(
