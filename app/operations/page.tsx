@@ -1,5 +1,5 @@
 import { connectToDatabase } from "@/lib/db";
-import { Event } from "@/models/event";
+import { Event, type EventDocument } from "@/models/event";
 import { Speaker } from "@/models/speaker";
 import { Sponsor } from "@/models/sponsor";
 import { Session } from "@/models/session";
@@ -15,13 +15,15 @@ import {
   MicrophoneStage,
   Handshake,
   ChartLineUp,
-  Activity,
+  Pulse,
   ShieldCheck,
   ArrowLeft,
   CaretRight,
   Clock,
   CheckCircle,
 } from "@phosphor-icons/react/dist/ssr";
+
+export const dynamic = "force-dynamic";
 
 export default async function OperationsPage({
   searchParams,
@@ -49,7 +51,9 @@ export default async function OperationsPage({
   ]);
 
   // Fetch latest event for overview
-  const latestEvent = await Event.findOne().sort({ createdAt: -1 }).lean();
+  const latestEvent = (await Event.findOne()
+    .sort({ createdAt: -1 })
+    .lean()) as EventDocument | null;
 
   if (collection) {
     return (
@@ -80,7 +84,7 @@ export default async function OperationsPage({
             ) : (
               <div className="flex flex-col items-center justify-center py-20 text-center">
                 <div className="mb-4 rounded-full bg-slate-100 p-4">
-                  <Activity size={32} className="text-slate-400" />
+                  <Pulse size={32} className="text-slate-400" />
                 </div>
                 <h3 className="text-xl font-semibold text-slate-900">
                   Coming Soon
@@ -165,7 +169,7 @@ export default async function OperationsPage({
         {
           id: "logs",
           name: "API Logs",
-          icon: Activity,
+          icon: Pulse,
           count: "Live",
           color: "text-slate-600",
           bg: "bg-slate-50",
