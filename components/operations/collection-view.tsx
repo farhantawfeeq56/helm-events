@@ -1,34 +1,34 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { CollectionHeader } from "./collection-header";
 import { CollectionTable, Column } from "./collection-table";
 import { RecordDialog } from "./record-dialog";
 import { ImportDialog } from "./import-dialog";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash } from "@phosphor-icons/react";
+import { getColumns } from "./column-definitions";
+import { getFields, getSearchKey } from "./field-definitions";
 
-interface CollectionViewProps<T> {
+interface CollectionViewProps {
   title: string;
   collectionName: string;
-  columns: Column<T>[];
-  searchKey: keyof T;
-  fields: any[];
 }
 
 export function CollectionView<T extends { _id: string; id?: string }>({
   title,
   collectionName,
-  columns,
-  searchKey,
-  fields,
-}: CollectionViewProps<T>) {
+}: CollectionViewProps) {
   const [data, setData] = useState<T[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<T | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const columns = useMemo(() => getColumns(collectionName), [collectionName]);
+  const fields = useMemo(() => getFields(collectionName), [collectionName]);
+  const searchKey = useMemo(() => getSearchKey(collectionName), [collectionName]);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -105,12 +105,12 @@ export function CollectionView<T extends { _id: string; id?: string }>({
     }
   };
 
-  const enhancedColumns: Column<T>[] = [
+  const enhancedColumns: Column<any>[] = [
     ...columns,
     {
       header: "Actions",
-      accessorKey: "_id" as keyof T,
-      cell: (item: T) => (
+      accessorKey: "_id",
+      cell: (item: any) => (
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
@@ -147,7 +147,7 @@ export function CollectionView<T extends { _id: string; id?: string }>({
       <CollectionTable
         data={data}
         columns={enhancedColumns}
-        searchKey={searchKey}
+        searchKey={searchKey as any}
         searchTerm={searchTerm}
       />
       <RecordDialog
