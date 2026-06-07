@@ -35,7 +35,7 @@ export default function DashboardPage() {
                   <div className="h-2 w-2 rounded-full bg-sky-500" />
                   <div className="flex-1 space-y-1">
                     <p className="text-sm font-medium leading-none">
-                      New event "AI Summit 2024" created
+                      New event &quot;AI Summit 2024&quot; created
                     </p>
                     <p className="text-xs text-slate-500">2 hours ago</p>
                   </div>

@@ -165,13 +165,13 @@ export default function AgentPage() {
                       <div className="flex gap-4 border-l-2 border-emerald-500 pl-4 py-1">
                         <div className="flex flex-col">
                           <span className="text-[10px] font-black text-emerald-600 uppercase">Success</span>
-                          <p className="text-sm font-medium text-slate-600 italic">"Registration flow stabilized. Latency down by 40%."</p>
+                          <p className="text-sm font-medium text-slate-600 italic">&quot;Registration flow stabilized. Latency down by 40%.&quot;</p>
                         </div>
                       </div>
                       <div className="flex gap-4 border-l-2 border-orange-500 pl-4 py-1">
                         <div className="flex flex-col">
                           <span className="text-[10px] font-black text-orange-600 uppercase">Warning</span>
-                          <p className="text-sm font-medium text-slate-600 italic">"VIP transport delayed on 5th Ave. ETA +15m."</p>
+                          <p className="text-sm font-medium text-slate-600 italic">&quot;VIP transport delayed on 5th Ave. ETA +15m.&quot;</p>
                         </div>
                       </div>
                     </div>
