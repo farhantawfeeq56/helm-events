@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { CollectionHeader } from "./collection-header";
 import { CollectionTable, Column } from "./collection-table";
 import { RecordDialog } from "./record-dialog";
+import { ImportDialog } from "./import-dialog";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash } from "@phosphor-icons/react";
 
@@ -25,6 +26,7 @@ export function CollectionView<T extends { _id: string; id?: string }>({
   const [data, setData] = useState<T[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<T | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -55,6 +57,10 @@ export function CollectionView<T extends { _id: string; id?: string }>({
   const handleEditRecord = (record: T) => {
     setEditingRecord(record);
     setIsDialogOpen(true);
+  };
+
+  const handleImport = () => {
+    setIsImportOpen(true);
   };
 
   const handleDeleteRecord = async (id: string) => {
@@ -135,8 +141,8 @@ export function CollectionView<T extends { _id: string; id?: string }>({
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         onAddRecord={handleAddRecord}
-        onImportCSV={() => console.log("Import CSV")}
-        onImportExcel={() => console.log("Import Excel")}
+        onImportCSV={handleImport}
+        onImportExcel={handleImport}
       />
       <CollectionTable
         data={data}
@@ -152,6 +158,14 @@ export function CollectionView<T extends { _id: string; id?: string }>({
         fields={fields}
         initialData={editingRecord}
       />
+      <ImportDialog
+        isOpen={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
+        collectionName={collectionName}
+        schemaFields={fields.map((f: any) => ({ name: f.name, label: f.label }))}
+        onImportComplete={fetchData}
+      />
     </div>
   );
 }
+

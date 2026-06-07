@@ -6,6 +6,8 @@ import { Session } from "@/models/session";
 import { Room } from "@/models/room";
 import { Volunteer } from "@/models/volunteer";
 import { Attendee } from "@/models/attendee";
+import { Organizer } from "@/models/organizer";
+import { Facility } from "@/models/facility";
 import { APILog } from "@/models/api-log";
 import { SystemHealth } from "@/models/system-health";
 import { Analytics } from "@/models/analytics";
@@ -25,6 +27,8 @@ import {
   CaretRight,
   Clock,
   CheckCircle,
+  Buildings,
+  IdentificationCard,
 } from "@phosphor-icons/react/dist/ssr";
 
 export const dynamic = "force-dynamic";
@@ -46,6 +50,8 @@ export default async function OperationsPage({
     roomCount,
     volunteerCount,
     attendeeCount,
+    organizerCount,
+    facilityCount,
   ] = await Promise.all([
     Event.countDocuments(),
     Speaker.countDocuments(),
@@ -54,6 +60,8 @@ export default async function OperationsPage({
     Room.countDocuments(),
     Volunteer.countDocuments(),
     Attendee.countDocuments(),
+    Organizer.countDocuments(),
+    Facility.countDocuments(),
   ]);
 
   // Fetch latest event for overview
@@ -223,6 +231,20 @@ export default async function OperationsPage({
     { header: "Setup", accessorKey: "setupStyle" as const },
   ];
 
+  const organizerColumns = [
+    { header: "Name", accessorKey: "fullName" as const },
+    { header: "Email", accessorKey: "email" as const },
+    { header: "Organization", accessorKey: "organization" as const },
+    { header: "Role", accessorKey: "role" as const },
+  ];
+
+  const facilityColumns = [
+    { header: "Name", accessorKey: "name" as const },
+    { header: "Type", accessorKey: "type" as const },
+    { header: "Address", accessorKey: "address" as const },
+    { header: "Capacity", accessorKey: "capacity" as const },
+  ];
+
   const logColumns = [
     { header: "Method", accessorKey: "method" as const },
     { header: "Path", accessorKey: "path" as const },
@@ -372,6 +394,23 @@ export default async function OperationsPage({
     { name: "setupStyle", label: "Setup Style", type: "text" },
   ];
 
+  const organizerFields = [
+    { name: "fullName", label: "Full Name", type: "text" },
+    { name: "email", label: "Email", type: "email" },
+    { name: "phone", label: "Phone", type: "text" },
+    { name: "organization", label: "Organization", type: "text" },
+    { name: "role", label: "Role", type: "text" },
+  ];
+
+  const facilityFields = [
+    { name: "name", label: "Facility Name", type: "text" },
+    { name: "type", label: "Type", type: "text" },
+    { name: "address", label: "Address", type: "text" },
+    { name: "capacity", label: "Capacity", type: "number" },
+    { name: "contactName", label: "Contact Name", type: "text" },
+    { name: "contactEmail", label: "Contact Email", type: "email" },
+  ];
+
   const logFields = [
     { name: "method", label: "Method", type: "text" },
     { name: "path", label: "Path", type: "text" },
@@ -433,6 +472,12 @@ export default async function OperationsPage({
         break;
       case "rooms":
         viewProps = { title: "Rooms", collectionName: "rooms", columns: roomColumns, searchKey: "name", fields: roomFields };
+        break;
+      case "organizers":
+        viewProps = { title: "Organizers", collectionName: "organizers", columns: organizerColumns, searchKey: "fullName", fields: organizerFields };
+        break;
+      case "facilities":
+        viewProps = { title: "Facilities", collectionName: "facilities", columns: facilityColumns, searchKey: "name", fields: facilityFields };
         break;
       case "logs":
         viewProps = { title: "API Logs", collectionName: "logs", columns: logColumns, searchKey: "path", fields: logFields };
@@ -516,6 +561,14 @@ export default async function OperationsPage({
           color: "text-amber-600",
           bg: "bg-amber-50",
         },
+        {
+          id: "organizers",
+          name: "Organizers",
+          icon: IdentificationCard,
+          count: organizerCount,
+          color: "text-rose-600",
+          bg: "bg-rose-50",
+        },
       ],
     },
     {
@@ -545,6 +598,14 @@ export default async function OperationsPage({
           count: roomCount,
           color: "text-rose-600",
           bg: "bg-rose-50",
+        },
+        {
+          id: "facilities",
+          name: "Facilities",
+          icon: Buildings,
+          count: facilityCount,
+          color: "text-emerald-600",
+          bg: "bg-emerald-50",
         },
       ],
     },
