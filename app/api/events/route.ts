@@ -3,6 +3,19 @@ import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { Event } from "@/models/event";
 
+export async function GET() {
+  try {
+    await connectToDatabase();
+    const events = await Event.find({}).sort({ createdAt: -1 });
+    return NextResponse.json({ success: true, data: events });
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, error: "Failed to fetch events" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(request: Request) {
   try {
     await connectToDatabase();

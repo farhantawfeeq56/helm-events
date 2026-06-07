@@ -2,36 +2,31 @@ import { model, models, Schema, type InferSchemaType } from "mongoose";
 
 const sponsorSchema = new Schema(
   {
-    name: {
+    companyName: {
       type: String,
       required: true,
       trim: true,
     },
     tier: {
       type: String,
-      enum: ["title", "gold", "silver", "community", "partner"],
-      default: "community",
+      enum: ["Platinum", "Gold", "Silver", "Bronze"],
+      default: "Silver",
     },
-    contactName: {
+    contact: {
       type: String,
       trim: true,
       default: "",
     },
-    contactEmail: {
+    email: {
       type: String,
       trim: true,
       lowercase: true,
       default: "",
     },
-    activationNotes: {
-      type: String,
-      trim: true,
-      default: "",
-    },
     status: {
       type: String,
-      enum: ["prospect", "confirmed", "invoiced"],
-      default: "prospect",
+      enum: ["Active", "Pending"],
+      default: "Pending",
     },
   },
   {

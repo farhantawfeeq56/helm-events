@@ -26,7 +26,7 @@ interface CollectionTableProps<T> {
   searchTerm: string;
 }
 
-export function CollectionTable<T extends { id: string }>({
+export function CollectionTable<T extends { _id?: string; id?: string }>({
   data,
   columns,
   searchKey,
@@ -107,7 +107,7 @@ export function CollectionTable<T extends { id: string }>({
             {paginatedData.length > 0 ? (
               paginatedData.map((item) => (
                 <TableRow
-                  key={item.id}
+                  key={item._id || item.id}
                   className="hover:bg-slate-50/50 transition-colors border-b border-slate-100 last:border-0"
                 >
                   {columns.map((column) => (
