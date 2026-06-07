@@ -33,10 +33,10 @@ const speakerSchema = new Schema(
       required: true,
       trim: true,
     },
-    availabilityStatus: {
+    status: {
       type: String,
-      enum: ["pending", "confirmed", "unavailable"],
-      default: "pending",
+      enum: ["Confirmed", "Pending", "Withdrawn"],
+      default: "Pending",
     },
   },
   {

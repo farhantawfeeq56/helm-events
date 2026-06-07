@@ -2,11 +2,6 @@ import { model, models, Schema, type InferSchemaType } from "mongoose";
 
 const volunteerSchema = new Schema(
   {
-    eventId: {
-      type: Schema.Types.ObjectId,
-      ref: "Event",
-      required: true,
-    },
     fullName: {
       type: String,
       required: true,
@@ -35,8 +30,8 @@ const volunteerSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ["invited", "confirmed", "checked-in"],
-      default: "invited",
+      enum: ["Active", "Pending", "Inactive"],
+      default: "Pending",
     },
   },
   {

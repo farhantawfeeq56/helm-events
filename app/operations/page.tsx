@@ -1,15 +1,15 @@
 import { connectToDatabase } from "@/lib/db";
-import { Event, type EventDocument } from "@/models/event";
+import { Event } from "@/models/event";
 import { Speaker } from "@/models/speaker";
 import { Sponsor } from "@/models/sponsor";
 import { Session } from "@/models/session";
 import { Room } from "@/models/room";
 import { Volunteer } from "@/models/volunteer";
 import { Attendee } from "@/models/attendee";
-import { EventForm } from "@/components/forms/event-form";
-import { SpeakerForm } from "@/components/forms/speaker-form";
+import { APILog } from "@/models/api-log";
+import { SystemHealth } from "@/models/system-health";
+import { Analytics } from "@/models/analytics";
 import { CollectionView } from "@/components/operations/collection-view";
-import { SPEAKERS, VOLUNTEERS, SPONSORS, ATTENDEES } from "@/lib/mock-data";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import {
@@ -57,9 +57,9 @@ export default async function OperationsPage({
   ]);
 
   // Fetch latest event for overview
-  const latestEvent = (await Event.findOne()
+  const latestEvent = await Event.findOne()
     .sort({ createdAt: -1 })
-    .lean()) as EventDocument | null;
+    .lean();
 
   // Column Definitions
   const speakerColumns = [
@@ -181,7 +181,270 @@ export default async function OperationsPage({
     },
   ];
 
+  const eventColumns = [
+    { header: "Event Name", accessorKey: "name" as const },
+    { header: "Venue", accessorKey: "venue" as const },
+    { header: "City", accessorKey: "city" as const },
+    {
+      header: "Start Date",
+      accessorKey: "startDate" as const,
+      cell: (item: any) => new Date(item.startDate).toLocaleDateString(),
+    },
+    {
+      header: "Status",
+      accessorKey: "status" as const,
+      cell: (item: any) => (
+        <Badge className="capitalize">{item.status}</Badge>
+      ),
+    },
+  ];
+
+  const sessionColumns = [
+    { header: "Title", accessorKey: "title" as const },
+    { header: "Track", accessorKey: "track" as const },
+    {
+      header: "Start",
+      accessorKey: "startTime" as const,
+      cell: (item: any) => new Date(item.startTime).toLocaleString(),
+    },
+    {
+      header: "Status",
+      accessorKey: "status" as const,
+      cell: (item: any) => (
+        <Badge className="capitalize">{item.status}</Badge>
+      ),
+    },
+  ];
+
+  const roomColumns = [
+    { header: "Name", accessorKey: "name" as const },
+    { header: "Capacity", accessorKey: "capacity" as const },
+    { header: "Location", accessorKey: "location" as const },
+    { header: "Setup", accessorKey: "setupStyle" as const },
+  ];
+
+  const logColumns = [
+    { header: "Method", accessorKey: "method" as const },
+    { header: "Path", accessorKey: "path" as const },
+    { header: "Status", accessorKey: "status" as const },
+    { header: "Duration", accessorKey: "duration" as const },
+  ];
+
+  const healthColumns = [
+    { header: "Service", accessorKey: "service" as const },
+    { header: "Status", accessorKey: "status" as const },
+    { header: "Uptime", accessorKey: "uptime" as const },
+  ];
+
+  const analyticsColumns = [
+    { header: "Metric", accessorKey: "name" as const },
+    { header: "Value", accessorKey: "value" as const },
+    { header: "Change", accessorKey: "change" as const },
+  ];
+
+  // Field Definitions for Dialogs
+  const speakerFields = [
+    { name: "fullName", label: "Full Name", type: "text" },
+    { name: "email", label: "Email", type: "email" },
+    { name: "company", label: "Company", type: "text" },
+    { name: "topic", label: "Topic", type: "text" },
+    {
+      name: "status",
+      label: "Status",
+      type: "select",
+      options: [
+        { label: "Confirmed", value: "Confirmed" },
+        { label: "Pending", value: "Pending" },
+        { label: "Withdrawn", value: "Withdrawn" },
+      ],
+    },
+  ];
+
+  const attendeeFields = [
+    { name: "fullName", label: "Full Name", type: "text" },
+    { name: "email", label: "Email", type: "email" },
+    { name: "organization", label: "Organization", type: "text" },
+    {
+      name: "ticketType",
+      label: "Ticket Type",
+      type: "select",
+      options: [
+        { label: "VIP", value: "VIP" },
+        { label: "General", value: "General" },
+        { label: "Student", value: "Student" },
+      ],
+    },
+    {
+      name: "status",
+      label: "Status",
+      type: "select",
+      options: [
+        { label: "Registered", value: "Registered" },
+        { label: "Checked-in", value: "Checked-in" },
+        { label: "Cancelled", value: "Cancelled" },
+      ],
+    },
+  ];
+
+  const volunteerFields = [
+    { name: "fullName", label: "Full Name", type: "text" },
+    { name: "email", label: "Email", type: "email" },
+    { name: "role", label: "Role", type: "text" },
+    { name: "shift", label: "Shift", type: "text" },
+    {
+      name: "status",
+      label: "Status",
+      type: "select",
+      options: [
+        { label: "Active", value: "Active" },
+        { label: "Pending", value: "Pending" },
+        { label: "Inactive", value: "Inactive" },
+      ],
+    },
+  ];
+
+  const sponsorFields = [
+    { name: "companyName", label: "Company Name", type: "text" },
+    {
+      name: "tier",
+      label: "Tier",
+      type: "select",
+      options: [
+        { label: "Platinum", value: "Platinum" },
+        { label: "Gold", value: "Gold" },
+        { label: "Silver", value: "Silver" },
+        { label: "Bronze", value: "Bronze" },
+      ],
+    },
+    { name: "contact", label: "Contact Person", type: "text" },
+    {
+      name: "status",
+      label: "Status",
+      type: "select",
+      options: [
+        { label: "Active", value: "Active" },
+        { label: "Pending", value: "Pending" },
+      ],
+    },
+  ];
+
+  const eventFields = [
+    { name: "name", label: "Event Name", type: "text" },
+    { name: "venue", label: "Venue", type: "text" },
+    { name: "city", label: "City", type: "text" },
+    { name: "startDate", label: "Start Date", type: "text", placeholder: "YYYY-MM-DD" },
+    { name: "endDate", label: "End Date", type: "text", placeholder: "YYYY-MM-DD" },
+    {
+      name: "status",
+      label: "Status",
+      type: "select",
+      options: [
+        { label: "Planning", value: "planning" },
+        { label: "Confirmed", value: "confirmed" },
+        { label: "Live", value: "live" },
+        { label: "Completed", value: "completed" },
+      ],
+    },
+  ];
+
+  const sessionFields = [
+    { name: "title", label: "Title", type: "text" },
+    { name: "track", label: "Track", type: "text" },
+    { name: "startTime", label: "Start Time", type: "text", placeholder: "YYYY-MM-DD HH:MM" },
+    { name: "endTime", label: "End Time", type: "text", placeholder: "YYYY-MM-DD HH:MM" },
+    {
+      name: "status",
+      label: "Status",
+      type: "select",
+      options: [
+        { label: "Draft", value: "draft" },
+        { label: "Confirmed", value: "confirmed" },
+        { label: "Live", value: "live" },
+        { label: "Completed", value: "completed" },
+      ],
+    },
+  ];
+
+  const roomFields = [
+    { name: "name", label: "Room Name", type: "text" },
+    { name: "capacity", label: "Capacity", type: "number" },
+    { name: "location", label: "Location", type: "text" },
+    { name: "setupStyle", label: "Setup Style", type: "text" },
+  ];
+
+  const logFields = [
+    { name: "method", label: "Method", type: "text" },
+    { name: "path", label: "Path", type: "text" },
+    { name: "status", label: "Status", type: "number" },
+    { name: "duration", label: "Duration", type: "text" },
+  ];
+
+  const healthFields = [
+    { name: "service", label: "Service", type: "text" },
+    {
+      name: "status",
+      label: "Status",
+      type: "select",
+      options: [
+        { label: "Operational", value: "Operational" },
+        { label: "Degraded", value: "Degraded" },
+        { label: "Down", value: "Down" },
+      ],
+    },
+    { name: "uptime", label: "Uptime", type: "text" },
+  ];
+
+  const analyticsFields = [
+    { name: "name", label: "Metric Name", type: "text" },
+    { name: "value", label: "Value", type: "text" },
+    { name: "change", label: "Change", type: "text" },
+    {
+      name: "trend",
+      label: "Trend",
+      type: "select",
+      options: [
+        { label: "Up", value: "up" },
+        { label: "Down", value: "down" },
+        { label: "Neutral", value: "neutral" },
+      ],
+    },
+  ];
+
   if (collection) {
+    let viewProps: any = null;
+    switch (collection) {
+      case "speakers":
+        viewProps = { title: "Speakers", collectionName: "speakers", columns: speakerColumns, searchKey: "fullName", fields: speakerFields };
+        break;
+      case "attendees":
+        viewProps = { title: "Attendees", collectionName: "attendees", columns: attendeeColumns, searchKey: "fullName", fields: attendeeFields };
+        break;
+      case "volunteers":
+        viewProps = { title: "Volunteers", collectionName: "volunteers", columns: volunteerColumns, searchKey: "fullName", fields: volunteerFields };
+        break;
+      case "sponsors":
+        viewProps = { title: "Sponsors", collectionName: "sponsors", columns: sponsorColumns, searchKey: "companyName", fields: sponsorFields };
+        break;
+      case "events":
+        viewProps = { title: "Events", collectionName: "events", columns: eventColumns, searchKey: "name", fields: eventFields };
+        break;
+      case "sessions":
+        viewProps = { title: "Sessions", collectionName: "sessions", columns: sessionColumns, searchKey: "title", fields: sessionFields };
+        break;
+      case "rooms":
+        viewProps = { title: "Rooms", collectionName: "rooms", columns: roomColumns, searchKey: "name", fields: roomFields };
+        break;
+      case "logs":
+        viewProps = { title: "API Logs", collectionName: "logs", columns: logColumns, searchKey: "path", fields: logFields };
+        break;
+      case "health":
+        viewProps = { title: "System Health", collectionName: "health", columns: healthColumns, searchKey: "service", fields: healthFields };
+        break;
+      case "analytics":
+        viewProps = { title: "Analytics", collectionName: "analytics", columns: analyticsColumns, searchKey: "name", fields: analyticsFields };
+        break;
+    }
+
     return (
       <div className="min-h-screen bg-slate-50 px-6 py-10 text-slate-900">
         <div className="mx-auto w-full max-w-6xl">
@@ -194,46 +457,8 @@ export default async function OperationsPage({
           </Link>
 
           <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-            {collection === "events" ? (
-              <>
-                <header className="mb-10">
-                  <h1 className="text-4xl font-bold capitalize tracking-tight text-slate-900">
-                    Events Management
-                  </h1>
-                  <p className="mt-2 text-lg text-slate-500">
-                    Configure and manage your event records.
-                  </p>
-                </header>
-                <EventForm />
-              </>
-            ) : collection === "speakers" ? (
-              <CollectionView
-                title="Speakers"
-                data={SPEAKERS}
-                columns={speakerColumns}
-                searchKey="fullName"
-              />
-            ) : collection === "volunteers" ? (
-              <CollectionView
-                title="Volunteers"
-                data={VOLUNTEERS}
-                columns={volunteerColumns}
-                searchKey="fullName"
-              />
-            ) : collection === "sponsors" ? (
-              <CollectionView
-                title="Sponsors"
-                data={SPONSORS}
-                columns={sponsorColumns}
-                searchKey="companyName"
-              />
-            ) : collection === "attendees" ? (
-              <CollectionView
-                title="Attendees"
-                data={ATTENDEES}
-                columns={attendeeColumns}
-                searchKey="fullName"
-              />
+            {viewProps ? (
+              <CollectionView {...viewProps} />
             ) : (
               <div className="flex flex-col items-center justify-center py-20 text-center">
                 <div className="mb-4 rounded-full bg-slate-100 p-4">
@@ -394,19 +619,19 @@ export default async function OperationsPage({
                 <div className="space-y-6">
                   <div>
                     <h3 className="text-3xl font-bold text-slate-900">
-                      {latestEvent.name}
+                      {(latestEvent as any).name}
                     </h3>
                     <div className="mt-2 flex flex-wrap gap-4 text-slate-500">
                       <div className="flex items-center gap-1.5">
                         <MapPin size={18} />
                         <span>
-                          {latestEvent.venue}, {latestEvent.city}
+                          {(latestEvent as any).venue}, {(latestEvent as any).city}
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <Clock size={18} />
                         <span>
-                          {new Date(latestEvent.startDate).toLocaleDateString(
+                          {new Date((latestEvent as any).startDate).toLocaleDateString(
                             "en-US",
                             {
                               month: "short",
@@ -418,7 +643,7 @@ export default async function OperationsPage({
                       </div>
                       <div className="flex items-center gap-1.5">
                         <CheckCircle size={18} className="text-emerald-500" />
-                        <span className="capitalize">{latestEvent.status}</span>
+                        <span className="capitalize">{(latestEvent as any).status}</span>
                       </div>
                     </div>
                   </div>
