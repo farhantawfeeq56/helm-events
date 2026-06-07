@@ -45,6 +45,25 @@ export interface Attendee {
   status: AttendeeStatus;
 }
 
+export interface Organizer {
+  _id: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  organization: string;
+  role: string;
+}
+
+export interface Facility {
+  _id: string;
+  name: string;
+  type: string;
+  address: string;
+  capacity: number;
+  contactName: string;
+  contactEmail: string;
+}
+
 export interface Event {
   _id: string;
   name: string;
