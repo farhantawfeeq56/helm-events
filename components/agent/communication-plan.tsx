@@ -51,7 +51,7 @@ export function CommunicationPlan({ communications }: CommunicationPlanProps) {
               )}
             </div>
             <p className="text-sm text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100 mb-3 italic">
-              "{comm.message}"
+              &quot;{comm.message}&quot;
             </p>
             {!sentIds.has(comm.id) && (
               <Button 
