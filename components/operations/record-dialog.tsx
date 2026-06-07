@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -99,7 +100,7 @@ export function RecordDialog({
                   </SelectContent>
                 </Select>
               ) : field.type === "textarea" ? (
-                <Input
+                <Textarea
                   id={field.name}
                   value={formData[field.name] || ""}
                   onChange={(e) => handleChange(field.name, e.target.value)}
