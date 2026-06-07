@@ -5,8 +5,12 @@ import { Sponsor } from "@/models/sponsor";
 import { Session } from "@/models/session";
 import { Room } from "@/models/room";
 import { Volunteer } from "@/models/volunteer";
+import { Attendee } from "@/models/attendee";
 import { EventForm } from "@/components/forms/event-form";
 import { SpeakerForm } from "@/components/forms/speaker-form";
+import { CollectionView } from "@/components/operations/collection-view";
+import { SPEAKERS, VOLUNTEERS, SPONSORS, ATTENDEES } from "@/lib/mock-data";
+import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import {
   Users,
@@ -41,6 +45,7 @@ export default async function OperationsPage({
     sessionCount,
     roomCount,
     volunteerCount,
+    attendeeCount,
   ] = await Promise.all([
     Event.countDocuments(),
     Speaker.countDocuments(),
@@ -48,12 +53,133 @@ export default async function OperationsPage({
     Session.countDocuments(),
     Room.countDocuments(),
     Volunteer.countDocuments(),
+    Attendee.countDocuments(),
   ]);
 
   // Fetch latest event for overview
   const latestEvent = (await Event.findOne()
     .sort({ createdAt: -1 })
     .lean()) as EventDocument | null;
+
+  // Column Definitions
+  const speakerColumns = [
+    { header: "Name", accessorKey: "fullName" as const },
+    { header: "Email", accessorKey: "email" as const },
+    { header: "Company", accessorKey: "company" as const },
+    { header: "Topic", accessorKey: "topic" as const },
+    {
+      header: "Status",
+      accessorKey: "status" as const,
+      cell: (item: any) => (
+        <Badge
+          className={
+            item.status === "Confirmed"
+              ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+              : item.status === "Pending"
+              ? "bg-amber-50 text-amber-700 border-amber-100"
+              : "bg-slate-50 text-slate-700 border-slate-100"
+          }
+        >
+          {item.status}
+        </Badge>
+      ),
+    },
+  ];
+
+  const volunteerColumns = [
+    { header: "Name", accessorKey: "fullName" as const },
+    { header: "Email", accessorKey: "email" as const },
+    { header: "Role", accessorKey: "role" as const },
+    { header: "Shift", accessorKey: "shift" as const },
+    {
+      header: "Status",
+      accessorKey: "status" as const,
+      cell: (item: any) => (
+        <Badge
+          className={
+            item.status === "Active"
+              ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+              : item.status === "Pending"
+              ? "bg-amber-50 text-amber-700 border-amber-100"
+              : "bg-slate-50 text-slate-700 border-slate-100"
+          }
+        >
+          {item.status}
+        </Badge>
+      ),
+    },
+  ];
+
+  const sponsorColumns = [
+    { header: "Company", accessorKey: "companyName" as const },
+    {
+      header: "Tier",
+      accessorKey: "tier" as const,
+      cell: (item: any) => (
+        <Badge
+          className={
+            item.tier === "Platinum"
+              ? "bg-indigo-50 text-indigo-700 border-indigo-100"
+              : item.tier === "Gold"
+              ? "bg-amber-50 text-amber-700 border-amber-100"
+              : item.tier === "Silver"
+              ? "bg-slate-200 text-slate-700 border-slate-300"
+              : "bg-orange-50 text-orange-700 border-orange-100"
+          }
+        >
+          {item.tier}
+        </Badge>
+      ),
+    },
+    { header: "Contact", accessorKey: "contact" as const },
+    {
+      header: "Status",
+      accessorKey: "status" as const,
+      cell: (item: any) => (
+        <Badge
+          className={
+            item.status === "Active"
+              ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+              : "bg-amber-50 text-amber-700 border-amber-100"
+          }
+        >
+          {item.status}
+        </Badge>
+      ),
+    },
+  ];
+
+  const attendeeColumns = [
+    { header: "Name", accessorKey: "fullName" as const },
+    { header: "Email", accessorKey: "email" as const },
+    { header: "Organization", accessorKey: "organization" as const },
+    {
+      header: "Ticket",
+      accessorKey: "ticketType" as const,
+      cell: (item: any) => (
+        <Badge variant="outline" className="font-medium">
+          {item.ticketType}
+        </Badge>
+      ),
+    },
+    {
+      header: "Status",
+      accessorKey: "status" as const,
+      cell: (item: any) => (
+        <Badge
+          className={
+            item.status === "Checked-in"
+              ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+              : item.status === "Registered"
+              ? "bg-blue-50 text-blue-700 border-blue-100"
+              : "bg-rose-50 text-rose-700 border-rose-100"
+          }
+        >
+          {item.status}
+        </Badge>
+      ),
+    },
+  ];
 
   if (collection) {
     return (
@@ -67,20 +193,47 @@ export default async function OperationsPage({
             Back to Data Hub
           </Link>
 
-          <header className="mb-10">
-            <h1 className="text-4xl font-bold capitalize tracking-tight text-slate-900">
-              {collection} Management
-            </h1>
-            <p className="mt-2 text-lg text-slate-500">
-              Configure and manage your {collection} records.
-            </p>
-          </header>
-
           <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
             {collection === "events" ? (
-              <EventForm />
+              <>
+                <header className="mb-10">
+                  <h1 className="text-4xl font-bold capitalize tracking-tight text-slate-900">
+                    Events Management
+                  </h1>
+                  <p className="mt-2 text-lg text-slate-500">
+                    Configure and manage your event records.
+                  </p>
+                </header>
+                <EventForm />
+              </>
             ) : collection === "speakers" ? (
-              <SpeakerForm />
+              <CollectionView
+                title="Speakers"
+                data={SPEAKERS}
+                columns={speakerColumns}
+                searchKey="fullName"
+              />
+            ) : collection === "volunteers" ? (
+              <CollectionView
+                title="Volunteers"
+                data={VOLUNTEERS}
+                columns={volunteerColumns}
+                searchKey="fullName"
+              />
+            ) : collection === "sponsors" ? (
+              <CollectionView
+                title="Sponsors"
+                data={SPONSORS}
+                columns={sponsorColumns}
+                searchKey="companyName"
+              />
+            ) : collection === "attendees" ? (
+              <CollectionView
+                title="Attendees"
+                data={ATTENDEES}
+                columns={attendeeColumns}
+                searchKey="fullName"
+              />
             ) : (
               <div className="flex flex-col items-center justify-center py-20 text-center">
                 <div className="mb-4 rounded-full bg-slate-100 p-4">
@@ -113,6 +266,14 @@ export default async function OperationsPage({
           count: speakerCount,
           color: "text-indigo-600",
           bg: "bg-indigo-50",
+        },
+        {
+          id: "attendees",
+          name: "Attendees",
+          icon: Users,
+          count: attendeeCount,
+          color: "text-blue-600",
+          bg: "bg-blue-50",
         },
         {
           id: "volunteers",

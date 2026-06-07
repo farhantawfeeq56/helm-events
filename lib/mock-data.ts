@@ -1,0 +1,151 @@
+export const SPEAKERS = [
+  {
+    id: "1",
+    fullName: "Dr. Aris Thorne",
+    email: "aris.thorne@example.com",
+    company: "Neural Dynamics",
+    topic: "The Future of BCI",
+    status: "Confirmed",
+  },
+  {
+    id: "2",
+    fullName: "Sarah Chen",
+    email: "sarah.chen@example.com",
+    company: "Green Orbit",
+    topic: "Sustainable Space Habitation",
+    status: "Pending",
+  },
+  {
+    id: "3",
+    fullName: "Marcus Vane",
+    email: "marcus.vane@example.com",
+    company: "Cyber Security Intl",
+    topic: "Quantum Encryption Realities",
+    status: "Confirmed",
+  },
+  {
+    id: "4",
+    fullName: "Elena Rodriguez",
+    email: "elena.r@example.com",
+    company: "BioGen Systems",
+    topic: "Synthetic Biology Ethics",
+    status: "Withdrawn",
+  },
+  {
+    id: "5",
+    fullName: "James Wilson",
+    email: "j.wilson@example.com",
+    company: "Quantum Computing Corp",
+    topic: "Practical Quantum Advantage",
+    status: "Confirmed",
+  },
+];
+
+export const VOLUNTEERS = [
+  {
+    id: "1",
+    fullName: "Alex Rivera",
+    email: "alex.r@example.com",
+    role: "Technical Support",
+    shift: "Morning",
+    status: "Active",
+  },
+  {
+    id: "2",
+    fullName: "Jordan Smith",
+    email: "jordan.s@example.com",
+    role: "Registration Desk",
+    shift: "Afternoon",
+    status: "Active",
+  },
+  {
+    id: "3",
+    fullName: "Taylor Reed",
+    email: "taylor.reed@example.com",
+    role: "Session Moderator",
+    shift: "Full Day",
+    status: "Pending",
+  },
+  {
+    id: "4",
+    fullName: "Morgan Lee",
+    email: "morgan.lee@example.com",
+    role: "Logistics",
+    shift: "Evening",
+    status: "Inactive",
+  },
+];
+
+export const SPONSORS = [
+  {
+    id: "1",
+    companyName: "Tech Giants Corp",
+    tier: "Platinum",
+    contact: "John Doe",
+    status: "Active",
+  },
+  {
+    id: "2",
+    companyName: "Innovate Labs",
+    tier: "Gold",
+    contact: "Jane Smith",
+    status: "Active",
+  },
+  {
+    id: "3",
+    companyName: "Future Systems",
+    tier: "Silver",
+    contact: "Bob Wilson",
+    status: "Pending",
+  },
+  {
+    id: "4",
+    companyName: "Eco Solutions",
+    tier: "Bronze",
+    contact: "Alice Brown",
+    status: "Active",
+  },
+];
+
+export const ATTENDEES = [
+  {
+    id: "1",
+    fullName: "Michael Scott",
+    email: "michael.scott@dundermifflin.com",
+    organization: "Dunder Mifflin",
+    ticketType: "VIP",
+    status: "Checked-in",
+  },
+  {
+    id: "2",
+    fullName: "Dwight Schrute",
+    email: "dwight.schrute@dundermifflin.com",
+    organization: "Schrute Farms",
+    ticketType: "General",
+    status: "Registered",
+  },
+  {
+    id: "3",
+    fullName: "Jim Halpert",
+    email: "jim.halpert@dundermifflin.com",
+    organization: "Athleap",
+    ticketType: "General",
+    status: "Checked-in",
+  },
+  {
+    id: "4",
+    fullName: "Pam Beesly",
+    email: "pam.beesly@dundermifflin.com",
+    organization: "Scranton Art",
+    ticketType: "Student",
+    status: "Cancelled",
+  },
+  {
+    id: "5",
+    fullName: "Angela Martin",
+    email: "angela.martin@dundermifflin.com",
+    organization: "Dunder Mifflin",
+    ticketType: "General",
+    status: "Registered",
+  },
+];
