@@ -34,11 +34,10 @@ export default async function OperationsPage({
 }: {
   searchParams: Promise<{ collection?: string }>;
 }) {
-  // await connectToDatabase();
+  await connectToDatabase();
   const { collection } = await searchParams;
 
   // Fetch counts
-  /*
   const [
     eventCount,
     speakerCount,
@@ -60,30 +59,11 @@ export default async function OperationsPage({
     Organizer.countDocuments(),
     Facility.countDocuments(),
   ]);
-  */
-  const eventCount = 1;
-  const speakerCount = 12;
-  const sponsorCount = 5;
-  const sessionCount = 24;
-  const roomCount = 4;
-  const volunteerCount = 15;
-  const attendeeCount = 250;
-  const organizerCount = 3;
-  const facilityCount = 2;
 
   // Fetch latest event for overview
-  /*
   const latestEvent = await Event.findOne()
     .sort({ createdAt: -1 })
     .lean();
-  */
-  const latestEvent = {
-    name: "Mock Global Tech Summit 2024",
-    venue: "Innovation Center",
-    city: "San Francisco",
-    startDate: new Date("2024-11-15T09:00:00Z"),
-    status: "confirmed",
-  };
 
   if (collection) {
     const titles: Record<string, string> = {
