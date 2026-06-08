@@ -1,18 +1,22 @@
 import { NextResponse } from "next/server";
+
 import { connectToDatabase } from "@/lib/db";
-import { Volunteer } from "@/lib/models/volunteer";
+import { Volunteer } from "@/models/volunteer";
 
 export async function GET() {
   try {
     await connectToDatabase();
     const volunteers = await Volunteer.find().sort({ createdAt: -1 });
 
-    return NextResponse.json(volunteers, { status: 200 });
+    return NextResponse.json({ success: true, data: volunteers });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unable to fetch volunteers.";
 
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: message },
+      { status: 500 }
+    );
   }
 }
 
@@ -22,11 +26,14 @@ export async function POST(request: Request) {
     const payload = await request.json();
     const volunteer = await Volunteer.create(payload);
 
-    return NextResponse.json(volunteer, { status: 201 });
+    return NextResponse.json({ success: true, data: volunteer }, { status: 201 });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unable to create volunteer.";
 
-    return NextResponse.json({ error: message }, { status: 400 });
+    return NextResponse.json(
+      { success: false, error: message },
+      { status: 400 }
+    );
   }
 }
