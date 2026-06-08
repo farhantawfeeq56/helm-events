@@ -8,12 +8,15 @@ export async function GET() {
     await connectToDatabase();
     const tasks = await Task.find().sort({ createdAt: -1 });
 
-    return NextResponse.json(tasks, { status: 200 });
+    return NextResponse.json({ success: true, data: tasks });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unable to fetch tasks.";
 
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: message },
+      { status: 500 }
+    );
   }
 }
 
@@ -23,11 +26,14 @@ export async function POST(request: Request) {
     const payload = await request.json();
     const task = await Task.create(payload);
 
-    return NextResponse.json(task, { status: 201 });
+    return NextResponse.json({ success: true, data: task }, { status: 201 });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unable to create task.";
 
-    return NextResponse.json({ error: message }, { status: 400 });
+    return NextResponse.json(
+      { success: false, error: message },
+      { status: 400 }
+    );
   }
 }
