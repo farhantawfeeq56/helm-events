@@ -38,5 +38,9 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "bridge-cf"]
+  "exclude": [
+    "node_modules",
+    "components/ui/**/*",
+    "hooks/use-mobile.ts"
+  , "bridge-cf"]
 }
