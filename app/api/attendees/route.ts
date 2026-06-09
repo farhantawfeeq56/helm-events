@@ -2,16 +2,12 @@ import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { Attendee } from "@/models/attendee";
 import { logActivity } from "@/lib/activity-logger";
+import { getPaginatedResponse } from "@/lib/utils";
 
 export async function GET(request: Request) {
   try {
     await connectToDatabase();
-    const { searchParams } = new URL(request.url);
-    const eventId = searchParams.get("eventId");
-    const query = eventId ? { eventId } : {};
-
-    const attendees = await Attendee.find(query).sort({ createdAt: -1 });
-    return NextResponse.json({ success: true, data: attendees });
+    return getPaginatedResponse(Attendee, request, {}, ["fullName", "email", "organization"]);
   } catch (error) {
     return NextResponse.json(
       { success: false, error: "Failed to fetch attendees" },

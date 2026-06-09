@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { Session } from "@/models/session";
 import { logActivity } from "@/lib/activity-logger";
+import { getPaginatedResponse } from "@/lib/utils";
 import "@/models/event";
 import "@/models/speaker";
 import "@/models/room";
@@ -9,16 +10,14 @@ import "@/models/room";
 export async function GET(request: Request) {
   try {
     await connectToDatabase();
-    const { searchParams } = new URL(request.url);
-    const eventId = searchParams.get("eventId");
-    const query = eventId ? { eventId } : {};
-
-    const sessions = await Session.find(query)
-      .populate("eventId")
-      .populate("speakerIds")
-      .populate("roomId")
-      .sort({ startTime: 1 });
-    return NextResponse.json({ success: true, data: sessions });
+    return getPaginatedResponse(
+      Session,
+      request,
+      {},
+      ["title", "track", "abstract"],
+      ["eventId", "speakerIds", "roomId"],
+      { startTime: 1 }
+    );
   } catch (error) {
     return NextResponse.json(
       { success: false, error: "Failed to fetch sessions" },

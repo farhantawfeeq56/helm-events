@@ -1,22 +1,13 @@
 import { NextResponse } from "next/server";
-
-import { FilterQuery } from "mongoose";
 import { connectToDatabase } from "@/lib/db";
-import { Incident, IncidentDocument } from "@/models/incident";
+import { Incident } from "@/models/incident";
 import { logActivity } from "@/lib/activity-logger";
+import { getPaginatedResponse } from "@/lib/utils";
 
 export async function GET(request: Request) {
   try {
     await connectToDatabase();
-    const { searchParams } = new URL(request.url);
-    const eventId = searchParams.get("eventId");
-
-    const query: FilterQuery<IncidentDocument> = {};
-    if (eventId) query.eventId = eventId;
-
-    const incidents = await Incident.find(query).sort({ createdAt: -1 });
-
-    return NextResponse.json({ success: true, data: incidents });
+    return getPaginatedResponse(Incident, request, {}, ["description", "type", "severity", "status"]);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unable to fetch incidents.";
