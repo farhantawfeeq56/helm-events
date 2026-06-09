@@ -2,11 +2,23 @@ import { NextResponse } from "next/server";
 
 import { connectToDatabase } from "@/lib/db";
 import { Task } from "@/lib/models/task";
+import { logActivity } from "@/lib/activity-logger";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     await connectToDatabase();
-    const tasks = await Task.find().sort({ createdAt: -1 });
+    const { searchParams } = new URL(request.url);
+    const eventId = searchParams.get("eventId");
+    const incidentId = searchParams.get("incidentId");
+
+    const query: any = {};
+    if (eventId) query.eventId = eventId;
+    if (incidentId) query.incidentId = incidentId;
+
+    const tasks = await Task.find(query)
+      .populate("incidentId")
+      .populate("eventId")
+      .sort({ createdAt: -1 });
 
     return NextResponse.json({ success: true, data: tasks });
   } catch (error) {
@@ -25,6 +37,14 @@ export async function POST(request: Request) {
     await connectToDatabase();
     const payload = await request.json();
     const task = await Task.create(payload);
+
+    await logActivity({
+      user: "Admin",
+      type: "human",
+      action: "create",
+      target: "task",
+      details: `Created task: ${task.title}`,
+    });
 
     return NextResponse.json({ success: true, data: task }, { status: 201 });
   } catch (error) {

@@ -76,6 +76,7 @@ const incidentSchema = new mongoose.Schema(
 const taskSchema = new mongoose.Schema(
   {
     incidentId: mongoose.Schema.Types.ObjectId,
+    eventId: mongoose.Schema.Types.ObjectId,
     title: String,
     description: String,
     status: String,
@@ -203,6 +204,7 @@ async function seed() {
   const tasks = await Task.insertMany([
     {
       incidentId: incidents[0]._id,
+      eventId: event._id,
       title: "Reconnect stage monitor feed",
       description:
         "Inspect HDMI splitter and restore confidence monitor signal before keynote.",
@@ -211,6 +213,7 @@ async function seed() {
     },
     {
       incidentId: incidents[0]._id,
+      eventId: event._id,
       title: "Prepare backup display",
       description:
         "Move spare monitor from breakout room storage to main stage holding area.",
@@ -219,6 +222,7 @@ async function seed() {
     },
     {
       incidentId: incidents[1]._id,
+      eventId: event._id,
       title: "Update session lead on ETA",
       description:
         "Inform programming desk and hold speaker intro by five minutes if needed.",
@@ -227,6 +231,7 @@ async function seed() {
     },
     {
       incidentId: incidents[2]._id,
+      eventId: event._id,
       title: "Open overflow check-in point",
       description:
         "Redirect walk-in attendees to the secondary registration table near Hall B.",
@@ -235,11 +240,19 @@ async function seed() {
     },
     {
       incidentId: incidents[2]._id,
+      eventId: event._id,
       title: "Deploy crowd guidance volunteer",
       description:
         "Station one volunteer at the east entrance to guide attendees into two lines.",
       status: "open",
       assignedTo: "Shreya Kulkarni",
+    },
+    {
+      eventId: event._id,
+      title: "Review safety protocols with all staff",
+      description: "Brief staff on emergency exits and evacuation plans.",
+      status: "open",
+      assignedTo: "Lead Organizer",
     },
   ]);
 

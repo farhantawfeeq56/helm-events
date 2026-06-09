@@ -5,7 +5,13 @@ const taskSchema = new Schema(
     incidentId: {
       type: Schema.Types.ObjectId,
       ref: "Incident",
+      required: false, // Make incident optional since tasks can now be event-level
+    },
+    eventId: {
+      type: Schema.Types.ObjectId,
+      ref: "Event",
       required: true,
+      index: true,
     },
     title: {
       type: String,

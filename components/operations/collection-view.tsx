@@ -14,6 +14,7 @@ interface CollectionViewProps {
   title: string;
   collectionName: string;
   latestEventId?: string;
+  incidentId?: string;
   initialSearchTerm?: string;
 }
 
@@ -21,6 +22,7 @@ export function CollectionView<T extends { _id: string; id?: string }>({
   title,
   collectionName,
   latestEventId,
+  incidentId,
   initialSearchTerm = "",
 }: CollectionViewProps) {
   const [data, setData] = useState<T[]>([]);
@@ -47,6 +49,9 @@ export function CollectionView<T extends { _id: string; id?: string }>({
       const url = new URL(`/api/${collectionName}`, window.location.origin);
       if (latestEventId && collectionName !== "events") {
         url.searchParams.append("eventId", latestEventId);
+      }
+      if (incidentId && collectionName === "tasks") {
+        url.searchParams.append("incidentId", incidentId);
       }
       const response = await fetch(url.toString());
       const result = await response.json();
@@ -104,6 +109,10 @@ export function CollectionView<T extends { _id: string; id?: string }>({
     // Automatically assign eventId for new records if not present
     if (!isEditing && latestEventId && collectionName !== "events" && !formData.eventId) {
       formData.eventId = latestEventId;
+    }
+    // Automatically assign incidentId for new tasks if present
+    if (!isEditing && incidentId && collectionName === "tasks" && !formData.incidentId) {
+      formData.incidentId = incidentId;
     }
 
     try {

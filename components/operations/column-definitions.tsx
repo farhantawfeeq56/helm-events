@@ -142,6 +142,26 @@ export const getColumns = (collectionName: string): Column<any>[] => {
             <Badge className="capitalize">{item.status}</Badge>
           ),
         },
+        {
+          header: "Ops",
+          accessorKey: "_id",
+          cell: (item: any) => (
+            <div className="flex gap-2">
+              <Link
+                href={`/operations?collection=incidents&eventId=${item._id}`}
+                className="text-xs font-bold text-indigo-600 hover:underline"
+              >
+                Incidents
+              </Link>
+              <Link
+                href={`/operations?collection=tasks&eventId=${item._id}`}
+                className="text-xs font-bold text-indigo-600 hover:underline"
+              >
+                Tasks
+              </Link>
+            </div>
+          ),
+        },
       ];
     case "sessions":
       return [
@@ -193,7 +213,123 @@ export const getColumns = (collectionName: string): Column<any>[] => {
           header: "Status",
           accessorKey: "status",
           cell: (item: any) => (
-            <Badge className="capitalize">{item.status}</Badge>
+            <Badge
+              className={
+                item.status === "live"
+                  ? "bg-red-50 text-red-700 border-red-100"
+                  : item.status === "confirmed"
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+                  : "bg-slate-50 text-slate-700 border-slate-100"
+              }
+            >
+              {item.status}
+            </Badge>
+          ),
+        },
+      ];
+    case "tasks":
+      return [
+        { header: "Title", accessorKey: "title" },
+        { header: "Assigned To", accessorKey: "assignedTo" },
+        {
+          header: "Status",
+          accessorKey: "status",
+          cell: (item: any) => (
+            <Badge
+              className={
+                item.status === "completed"
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+                  : item.status === "in-progress"
+                  ? "bg-amber-50 text-amber-700 border-amber-100"
+                  : item.status === "blocked"
+                  ? "bg-rose-50 text-rose-700 border-rose-100"
+                  : "bg-slate-50 text-slate-700 border-slate-100"
+              }
+            >
+              {item.status}
+            </Badge>
+          ),
+        },
+        {
+          header: "Related",
+          accessorKey: "incidentId",
+          cell: (item: any) =>
+            item.incidentId ? (
+              <Link
+                href={`/operations?collection=incidents&search=${encodeURIComponent(
+                  typeof item.incidentId === "object"
+                    ? item.incidentId.description
+                    : item.incidentId
+                )}`}
+                className="text-xs text-indigo-600 hover:underline"
+              >
+                {typeof item.incidentId === "object"
+                  ? `Incident: ${item.incidentId.type}`
+                  : "View Incident"}
+              </Link>
+            ) : (
+              <span className="text-xs text-slate-400">Event Level</span>
+            ),
+        },
+      ];
+    case "incidents":
+      return [
+        { header: "Description", accessorKey: "description" },
+        {
+          header: "Type",
+          accessorKey: "type",
+          cell: (item: any) => (
+            <Badge variant="outline" className="font-medium">
+              {item.type}
+            </Badge>
+          ),
+        },
+        {
+          header: "Severity",
+          accessorKey: "severity",
+          cell: (item: any) => (
+            <Badge
+              className={
+                item.severity === "critical"
+                  ? "bg-red-600 text-white"
+                  : item.severity === "high"
+                  ? "bg-orange-500 text-white"
+                  : item.severity === "medium"
+                  ? "bg-amber-400 text-white"
+                  : "bg-blue-400 text-white"
+              }
+            >
+              {item.severity}
+            </Badge>
+          ),
+        },
+        {
+          header: "Status",
+          accessorKey: "status",
+          cell: (item: any) => (
+            <Badge
+              className={
+                item.status === "resolved" || item.status === "closed"
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+                  : item.status === "investigating"
+                  ? "bg-amber-50 text-amber-700 border-amber-100"
+                  : "bg-slate-50 text-slate-700 border-slate-100"
+              }
+            >
+              {item.status}
+            </Badge>
+          ),
+        },
+        {
+          header: "Tasks",
+          accessorKey: "_id",
+          cell: (item: any) => (
+            <Link
+              href={`/operations?collection=tasks&incidentId=${item._id}`}
+              className="text-xs font-bold text-indigo-600 hover:underline"
+            >
+              Manage Tasks
+            </Link>
           ),
         },
       ];

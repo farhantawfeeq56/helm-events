@@ -127,3 +127,27 @@ export interface AnalyticsMetric {
   change: string;
   trend: Trend;
 }
+
+export interface Incident {
+  _id: string;
+  eventId: string | Event;
+  type: string;
+  severity: "low" | "medium" | "high" | "critical";
+  description: string;
+  status: "open" | "investigating" | "mitigated" | "resolved" | "closed";
+  reportedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Task {
+  _id: string;
+  incidentId?: string | Incident;
+  eventId: string | Event;
+  title: string;
+  description: string;
+  status: "open" | "in-progress" | "completed" | "blocked";
+  assignedTo: string;
+  createdAt: string;
+  updatedAt: string;
+}

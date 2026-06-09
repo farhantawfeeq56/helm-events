@@ -9,6 +9,8 @@ import { Attendee } from "@/models/attendee";
 import { Organizer } from "@/models/organizer";
 import { Facility } from "@/models/facility";
 import { Activity } from "@/models/activity";
+import { Task } from "@/lib/models/task";
+import { Incident } from "@/lib/models/incident";
 import { CollectionView } from "@/components/operations/collection-view";
 import { ActivityTimeline } from "@/components/operations/activity-timeline";
 import { DemoGenerator } from "@/components/operations/demo-generator";
@@ -36,10 +38,10 @@ export const dynamic = "force-dynamic";
 export default async function OperationsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ collection?: string; view?: string; search?: string }>;
+  searchParams: Promise<{ collection?: string; view?: string; search?: string; eventId?: string; incidentId?: string }>;
 }) {
   await connectToDatabase();
-  const { collection, view, search } = await searchParams;
+  const { collection, view, search, eventId, incidentId } = await searchParams;
 
   // Fetch counts
   const [
@@ -53,6 +55,8 @@ export default async function OperationsPage({
     organizerCount,
     facilityCount,
     activityCount,
+    taskCount,
+    incidentCount,
   ] = await Promise.all([
     Event.countDocuments(),
     Speaker.countDocuments(),
@@ -64,6 +68,8 @@ export default async function OperationsPage({
     Organizer.countDocuments(),
     Facility.countDocuments(),
     Activity.countDocuments(),
+    Task.countDocuments(),
+    Incident.countDocuments(),
   ]);
 
   // Fetch latest event for overview
@@ -82,6 +88,8 @@ export default async function OperationsPage({
       rooms: "Rooms",
       organizers: "Organizers",
       facilities: "Facilities",
+      tasks: "Tasks",
+      incidents: "Incidents",
       logs: "API Logs",
       health: "System Health",
       analytics: "Analytics",
@@ -122,7 +130,8 @@ export default async function OperationsPage({
               <CollectionView
                 title={title}
                 collectionName={collection}
-                latestEventId={(latestEvent as any)?._id?.toString()}
+                latestEventId={eventId || (latestEvent as any)?._id?.toString()}
+                incidentId={incidentId}
                 initialSearchTerm={search}
               />
             ) : (
@@ -228,8 +237,24 @@ export default async function OperationsPage({
           color: "text-emerald-600",
           bg: "bg-emerald-50",
         },
-      ],
-    },
+        {
+          id: "incidents",
+          name: "Incidents",
+          icon: Pulse,
+          count: incidentCount,
+          color: "text-rose-600",
+          bg: "bg-rose-50",
+        },
+        {
+          id: "tasks",
+          name: "Tasks",
+          icon: ListBullets,
+          count: taskCount,
+          color: "text-amber-600",
+          bg: "bg-amber-50",
+        },
+        ],
+        },
     {
       title: "Runtime",
       description: "System health and real-time analytics",

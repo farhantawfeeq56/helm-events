@@ -107,6 +107,8 @@ export const getFields = (collectionName: string): any[] => {
     case "sessions":
       return [
         { name: "title", label: "Title", type: "text" },
+        { name: "eventId", label: "Event ID", type: "text" },
+        { name: "roomId", label: "Room ID", type: "text" },
         { name: "track", label: "Track", type: "text" },
         { name: "startTime", label: "Start Time", type: "text", placeholder: "YYYY-MM-DD HH:MM" },
         { name: "endTime", label: "End Time", type: "text", placeholder: "YYYY-MM-DD HH:MM" },
@@ -121,6 +123,67 @@ export const getFields = (collectionName: string): any[] => {
             { label: "Completed", value: "completed" },
           ],
         },
+        { name: "abstract", label: "Abstract", type: "textarea" },
+      ];
+    case "tasks":
+      return [
+        { name: "title", label: "Title", type: "text" },
+        { name: "eventId", label: "Event ID", type: "text" },
+        { name: "incidentId", label: "Incident ID", type: "text" },
+        { name: "assignedTo", label: "Assigned To", type: "text" },
+        {
+          name: "status",
+          label: "Status",
+          type: "select",
+          options: [
+            { label: "Open", value: "open" },
+            { label: "In Progress", value: "in-progress" },
+            { label: "Completed", value: "completed" },
+            { label: "Blocked", value: "blocked" },
+          ],
+        },
+        { name: "description", label: "Description", type: "textarea" },
+      ];
+    case "incidents":
+      return [
+        { name: "description", label: "Description", type: "text" },
+        { name: "eventId", label: "Event ID", type: "text" },
+        {
+          name: "type",
+          label: "Type",
+          type: "select",
+          options: [
+            { label: "AV", value: "AV" },
+            { label: "Transport", value: "Transport" },
+            { label: "Crowd Flow", value: "Crowd Flow" },
+            { label: "Security", value: "Security" },
+            { label: "Other", value: "Other" },
+          ],
+        },
+        {
+          name: "severity",
+          label: "Severity",
+          type: "select",
+          options: [
+            { label: "Low", value: "low" },
+            { label: "Medium", value: "medium" },
+            { label: "High", value: "high" },
+            { label: "Critical", value: "critical" },
+          ],
+        },
+        {
+          name: "status",
+          label: "Status",
+          type: "select",
+          options: [
+            { label: "Open", value: "open" },
+            { label: "Investigating", value: "investigating" },
+            { label: "Mitigated", value: "mitigated" },
+            { label: "Resolved", value: "resolved" },
+            { label: "Closed", value: "closed" },
+          ],
+        },
+        { name: "reportedAt", label: "Reported At", type: "text", placeholder: "YYYY-MM-DD HH:MM" },
       ];
     case "rooms":
       return [
@@ -221,6 +284,10 @@ export const getSearchKey = (collectionName: string): string => {
       return "name";
     case "sessions":
       return "title";
+    case "tasks":
+      return "title";
+    case "incidents":
+      return "description";
     case "logs":
       return "path";
     case "health":
