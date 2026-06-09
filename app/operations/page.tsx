@@ -99,7 +99,7 @@ export default async function OperationsPage({
               <CollectionView
                 title={title}
                 collectionName={collection}
-                latestEventId={latestEvent?._id?.toString()}
+                latestEventId={(latestEvent as any)?._id?.toString()}
               />
             ) : (
               <div className="flex flex-col items-center justify-center py-20 text-center">
