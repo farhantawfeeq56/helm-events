@@ -8,7 +8,9 @@ import { Volunteer } from "@/models/volunteer";
 import { Attendee } from "@/models/attendee";
 import { Organizer } from "@/models/organizer";
 import { Facility } from "@/models/facility";
+import { Activity } from "@/models/activity";
 import { CollectionView } from "@/components/operations/collection-view";
+import { ActivityTimeline } from "@/components/operations/activity-timeline";
 import { DemoGenerator } from "@/components/operations/demo-generator";
 import Link from "next/link";
 import {
@@ -26,6 +28,7 @@ import {
   CheckCircle,
   Buildings,
   IdentificationCard,
+  ListBullets,
 } from "@phosphor-icons/react/dist/ssr";
 
 export const dynamic = "force-dynamic";
@@ -33,10 +36,10 @@ export const dynamic = "force-dynamic";
 export default async function OperationsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ collection?: string }>;
+  searchParams: Promise<{ collection?: string; view?: string }>;
 }) {
   await connectToDatabase();
-  const { collection } = await searchParams;
+  const { collection, view } = await searchParams;
 
   // Fetch counts
   const [
@@ -49,6 +52,7 @@ export default async function OperationsPage({
     attendeeCount,
     organizerCount,
     facilityCount,
+    activityCount,
   ] = await Promise.all([
     Event.countDocuments(),
     Speaker.countDocuments(),
@@ -59,6 +63,7 @@ export default async function OperationsPage({
     Attendee.countDocuments(),
     Organizer.countDocuments(),
     Facility.countDocuments(),
+    Activity.countDocuments(),
   ]);
 
   // Fetch latest event for overview
@@ -80,6 +85,7 @@ export default async function OperationsPage({
       logs: "API Logs",
       health: "System Health",
       analytics: "Analytics",
+      activities: "Activity Log",
     };
 
     const title = titles[collection];
@@ -96,7 +102,23 @@ export default async function OperationsPage({
           </Link>
 
           <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-            {title ? (
+            {collection === "activities" && view !== "table" ? (
+              <div>
+                <div className="flex items-center justify-between mb-8">
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-900">{title}</h2>
+                    <p className="text-slate-500">Chronological stream of system and human actions</p>
+                  </div>
+                  <Link 
+                    href="/operations?collection=activities&view=table"
+                    className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                  >
+                    View as Table
+                  </Link>
+                </div>
+                <ActivityTimeline />
+              </div>
+            ) : title ? (
               <CollectionView
                 title={title}
                 collectionName={collection}
@@ -211,6 +233,14 @@ export default async function OperationsPage({
       title: "Runtime",
       description: "System health and real-time analytics",
       items: [
+        {
+          id: "activities",
+          name: "Activity Log",
+          icon: ListBullets,
+          count: activityCount,
+          color: "text-indigo-600",
+          bg: "bg-indigo-50",
+        },
         {
           id: "logs",
           name: "API Logs",

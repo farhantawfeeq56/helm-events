@@ -184,6 +184,22 @@ export const getFields = (collectionName: string): any[] => {
           ],
         },
       ];
+    case "activities":
+      return [
+        { name: "user", label: "User", type: "text" },
+        {
+          name: "type",
+          label: "Type",
+          type: "select",
+          options: [
+            { label: "Human", value: "human" },
+            { label: "Agent", value: "agent" },
+          ],
+        },
+        { name: "action", label: "Action", type: "text" },
+        { name: "target", label: "Target", type: "text" },
+        { name: "details", label: "Details", type: "text" },
+      ];
     default:
       return [];
   }
@@ -209,6 +225,8 @@ export const getSearchKey = (collectionName: string): string => {
       return "path";
     case "health":
       return "service";
+    case "activities":
+      return "action";
     default:
       return "name";
   }

@@ -199,6 +199,32 @@ export const getColumns = (collectionName: string): Column<any>[] => {
         { header: "Value", accessorKey: "value" },
         { header: "Change", accessorKey: "change" },
       ];
+    case "activities":
+      return [
+        { header: "User", accessorKey: "user" },
+        {
+          header: "Type",
+          accessorKey: "type",
+          cell: (item: any) => (
+            <Badge
+              className={
+                item.type === "agent"
+                  ? "bg-indigo-50 text-indigo-700 border-indigo-100"
+                  : "bg-emerald-50 text-emerald-700 border-emerald-100"
+              }
+            >
+              {item.type}
+            </Badge>
+          ),
+        },
+        { header: "Action", accessorKey: "action" },
+        { header: "Target", accessorKey: "target" },
+        {
+          header: "Timestamp",
+          accessorKey: "timestamp",
+          cell: (item: any) => new Date(item.timestamp).toLocaleString(),
+        },
+      ];
     default:
       return [];
   }

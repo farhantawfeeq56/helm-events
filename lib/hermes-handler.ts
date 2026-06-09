@@ -1,4 +1,5 @@
 import { HermesResponse, mockIncidents } from "./hermes";
+import { logActivity } from "./activity-logger";
 
 /**
  * Core logic for processing Hermes messages.
@@ -7,9 +8,18 @@ import { HermesResponse, mockIncidents } from "./hermes";
 export async function processHermesMessage(message: string): Promise<HermesResponse> {
   const lowerText = message.toLowerCase();
 
+  // Log that Hermes is processing a request
+  await logActivity({
+    user: "Hermes",
+    type: "agent",
+    action: "Processing Query",
+    target: "System Intelligence",
+    details: `Message: "${message.substring(0, 50)}${message.length > 50 ? "..." : ""}"`,
+  });
+
   // Simulate AI decision logic (currently mocked)
   // In production, this would call Vertex AI with the HERMES_SYSTEM_PROMPT
-
+  
   let incidentData = null;
 
   if (lowerText.includes("delay")) {
@@ -30,6 +40,14 @@ export async function processHermesMessage(message: string): Promise<HermesRespo
   await new Promise((resolve) => setTimeout(resolve, 800));
 
   if (incidentData) {
+    await logActivity({
+      user: "Hermes",
+      type: "agent",
+      action: "Incident Analysis",
+      target: incidentData.title,
+      details: `Generated response options for: ${incidentData.title}`,
+    });
+
     return {
       type: "operational-card",
       content: `ANALYSIS COMPLETE: ${incidentData.title.toUpperCase()}. RESPONSE OPTIONS GENERATED.`,
@@ -39,6 +57,14 @@ export async function processHermesMessage(message: string): Promise<HermesRespo
 
   // Handle a specific case for checklist to demonstrate polymorphism
   if (lowerText.includes("deploy") || lowerText.includes("execute")) {
+    await logActivity({
+      user: "Hermes",
+      type: "agent",
+      action: "Execution Commenced",
+      target: "Operational Protocol",
+      details: "Commencing execution checklist",
+    });
+
     return {
       type: "execution-checklist",
       content: "EXECUTION COMMENCED. TRACKING OPERATIONAL STEPS.",
