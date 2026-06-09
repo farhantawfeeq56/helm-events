@@ -7,6 +7,12 @@ const sponsorSchema = new Schema(
       required: true,
       trim: true,
     },
+    eventId: {
+      type: Schema.Types.ObjectId,
+      ref: "Event",
+      required: true,
+      index: true,
+    },
     tier: {
       type: String,
       enum: ["Platinum", "Gold", "Silver", "Bronze"],

@@ -96,7 +96,11 @@ export default async function OperationsPage({
 
           <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
             {title ? (
-              <CollectionView title={title} collectionName={collection} />
+              <CollectionView
+                title={title}
+                collectionName={collection}
+                latestEventId={latestEvent?._id?.toString()}
+              />
             ) : (
               <div className="flex flex-col items-center justify-center py-20 text-center">
                 <div className="mb-4 rounded-full bg-slate-100 p-4">

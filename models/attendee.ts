@@ -2,6 +2,7 @@ import mongoose, { Schema, Document } from "mongoose";
 
 export interface AttendeeDocument extends Document {
   fullName: string;
+  eventId: mongoose.Types.ObjectId;
   email: string;
   organization: string;
   ticketType: "VIP" | "General" | "Student";
@@ -13,6 +14,12 @@ export interface AttendeeDocument extends Document {
 const attendeeSchema = new Schema<AttendeeDocument>(
   {
     fullName: { type: String, required: true },
+    eventId: {
+      type: Schema.Types.ObjectId,
+      ref: "Event",
+      required: true,
+      index: true,
+    },
     email: { type: String, required: true, unique: true },
     organization: { type: String, required: true },
     ticketType: {

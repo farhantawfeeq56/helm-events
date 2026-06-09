@@ -2,10 +2,14 @@ import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { Facility } from "@/models/facility";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     await connectToDatabase();
-    const facilities = await Facility.find({}).sort({ createdAt: -1 });
+    const { searchParams } = new URL(request.url);
+    const eventId = searchParams.get("eventId");
+    const query = eventId ? { eventId } : {};
+
+    const facilities = await Facility.find(query).sort({ createdAt: -1 });
     return NextResponse.json({ success: true, data: facilities });
   } catch (error) {
     return NextResponse.json(

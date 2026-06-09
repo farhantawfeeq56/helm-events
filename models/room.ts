@@ -6,6 +6,7 @@ const roomSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "Event",
       required: true,
+      index: true,
     },
     name: {
       type: String,

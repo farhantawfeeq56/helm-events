@@ -7,6 +7,12 @@ const facilitySchema = new Schema(
       required: true,
       trim: true,
     },
+    eventId: {
+      type: Schema.Types.ObjectId,
+      ref: "Event",
+      required: true,
+      index: true,
+    },
     type: {
       type: String,
       required: true,
