@@ -9,6 +9,7 @@ import { Attendee } from "@/models/attendee";
 import { Organizer } from "@/models/organizer";
 import { Facility } from "@/models/facility";
 import { CollectionView } from "@/components/operations/collection-view";
+import { DemoGenerator } from "@/components/operations/demo-generator";
 import Link from "next/link";
 import {
   Users,
@@ -363,6 +364,7 @@ export default async function OperationsPage({
                 Quick Actions
               </h4>
               <div className="space-y-3">
+                <DemoGenerator />
                 <Link
                   href="?collection=events"
                   className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white p-3 text-sm font-medium text-slate-700 transition-all hover:border-indigo-200 hover:bg-indigo-50/30"
