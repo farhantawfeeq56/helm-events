@@ -30,13 +30,12 @@ export async function POST(request: Request) {
     const payload = await request.json();
     const speaker = await Speaker.create(payload);
 
-    // Log the activity
     await logActivity({
-      user: "System Administrator",
+      user: "Admin",
       type: "human",
-      action: "Created Speaker",
-      target: speaker.fullName,
-      details: `Speaker created for event: ${speaker.eventId}`,
+      action: "create",
+      target: "speaker",
+      details: `Created speaker: ${speaker.fullName}`,
     });
 
     return NextResponse.json({ success: true, data: speaker }, { status: 201 });

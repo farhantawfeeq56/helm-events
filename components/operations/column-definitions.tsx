@@ -2,6 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Column } from "./collection-table";
+import Link from "next/link";
 
 export const getColumns = (collectionName: string): Column<any>[] => {
   switch (collectionName) {
@@ -145,6 +146,43 @@ export const getColumns = (collectionName: string): Column<any>[] => {
     case "sessions":
       return [
         { header: "Title", accessorKey: "title" },
+        {
+          header: "Speaker",
+          accessorKey: "speakerIds",
+          cell: (item: any) => (
+            <div className="flex flex-wrap gap-1">
+              {item.speakerIds && item.speakerIds.length > 0 ? (
+                item.speakerIds.map((s: any, idx: number) => (
+                  <Link
+                    key={s._id || idx}
+                    href={`/operations?collection=speakers&search=${encodeURIComponent(s.fullName || "")}`}
+                    className="text-indigo-600 hover:underline"
+                  >
+                    {s.fullName}
+                    {idx < item.speakerIds.length - 1 ? ", " : ""}
+                  </Link>
+                ))
+              ) : (
+                <span className="text-slate-400">TBD</span>
+              )}
+            </div>
+          ),
+        },
+        {
+          header: "Room",
+          accessorKey: "roomId",
+          cell: (item: any) =>
+            item.roomId ? (
+              <Link
+                href={`/operations?collection=rooms&search=${encodeURIComponent(item.roomId.name || "")}`}
+                className="text-indigo-600 hover:underline"
+              >
+                {item.roomId.name}
+              </Link>
+            ) : (
+              <span className="text-slate-400">N/A</span>
+            ),
+        },
         { header: "Track", accessorKey: "track" },
         {
           header: "Start",

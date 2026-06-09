@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { Organizer } from "@/models/organizer";
+import { logActivity } from "@/lib/activity-logger";
 
 export async function GET(request: Request) {
   try {
@@ -24,6 +25,14 @@ export async function POST(request: Request) {
     await connectToDatabase();
     const payload = await request.json();
     const organizer = await Organizer.create(payload);
+
+    await logActivity({
+      user: "Admin",
+      type: "human",
+      action: "create",
+      target: "organizer",
+      details: `Created organizer: ${organizer.fullName}`,
+    });
 
     return NextResponse.json({ success: true, data: organizer }, { status: 201 });
   } catch (error) {

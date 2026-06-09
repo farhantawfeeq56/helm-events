@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { Facility } from "@/models/facility";
+import { logActivity } from "@/lib/activity-logger";
 
 export async function GET(request: Request) {
   try {
@@ -24,6 +25,14 @@ export async function POST(request: Request) {
     await connectToDatabase();
     const payload = await request.json();
     const facility = await Facility.create(payload);
+
+    await logActivity({
+      user: "Admin",
+      type: "human",
+      action: "create",
+      target: "facility",
+      details: `Created facility: ${facility.name}`,
+    });
 
     return NextResponse.json({ success: true, data: facility }, { status: 201 });
   } catch (error) {

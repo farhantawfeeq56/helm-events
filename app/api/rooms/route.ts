@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { Room } from "@/models/room";
+import { logActivity } from "@/lib/activity-logger";
 
 export async function GET(request: Request) {
   try {
@@ -24,6 +25,15 @@ export async function POST(request: Request) {
     await connectToDatabase();
     const payload = await request.json();
     const room = await Room.create(payload);
+
+    await logActivity({
+      user: "Admin",
+      type: "human",
+      action: "create",
+      target: "room",
+      details: `Created room: ${room.name}`,
+    });
+
     return NextResponse.json({ success: true, data: room }, { status: 201 });
   } catch (error) {
     const message =

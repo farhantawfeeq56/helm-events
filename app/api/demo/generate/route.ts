@@ -9,6 +9,7 @@ import { Volunteer } from "@/models/volunteer";
 import { Attendee } from "@/models/attendee";
 import { Organizer } from "@/models/organizer";
 import { Facility } from "@/models/facility";
+import { logActivity } from "@/lib/activity-logger";
 import mongoose from "mongoose";
 
 export const dynamic = "force-dynamic";
@@ -205,6 +206,14 @@ export async function POST(req: NextRequest) {
       };
     });
     await Session.insertMany(sessionsData);
+
+    await logActivity({
+      user: "System",
+      type: "agent",
+      action: "generate_demo_data",
+      target: "system",
+      details: `Generated ${size} demo event: ${event.name}`,
+    });
 
     return NextResponse.json({
       success: true,

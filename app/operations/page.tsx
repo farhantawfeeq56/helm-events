@@ -36,10 +36,10 @@ export const dynamic = "force-dynamic";
 export default async function OperationsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ collection?: string; view?: string }>;
+  searchParams: Promise<{ collection?: string; view?: string; search?: string }>;
 }) {
   await connectToDatabase();
-  const { collection, view } = await searchParams;
+  const { collection, view, search } = await searchParams;
 
   // Fetch counts
   const [
@@ -123,6 +123,7 @@ export default async function OperationsPage({
                 title={title}
                 collectionName={collection}
                 latestEventId={(latestEvent as any)?._id?.toString()}
+                initialSearchTerm={search}
               />
             ) : (
               <div className="flex flex-col items-center justify-center py-20 text-center">

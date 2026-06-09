@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { Session } from "@/models/session";
+import { logActivity } from "@/lib/activity-logger";
 import "@/models/event";
 import "@/models/speaker";
 import "@/models/room";
@@ -31,6 +32,15 @@ export async function POST(request: Request) {
     await connectToDatabase();
     const payload = await request.json();
     const session = await Session.create(payload);
+
+    await logActivity({
+      user: "Admin",
+      type: "human",
+      action: "create",
+      target: "session",
+      details: `Created session: ${session.title}`,
+    });
+
     return NextResponse.json({ success: true, data: session }, { status: 201 });
   } catch (error) {
     const message =

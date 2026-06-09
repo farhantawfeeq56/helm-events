@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { Attendee } from "@/models/attendee";
+import { logActivity } from "@/lib/activity-logger";
 
 export async function GET(request: Request) {
   try {
@@ -24,6 +25,15 @@ export async function POST(request: Request) {
     await connectToDatabase();
     const payload = await request.json();
     const attendee = await Attendee.create(payload);
+
+    await logActivity({
+      user: "Admin",
+      type: "human",
+      action: "create",
+      target: "attendee",
+      details: `Created attendee: ${attendee.fullName}`,
+    });
+
     return NextResponse.json({ success: true, data: attendee }, { status: 201 });
   } catch (error) {
     const message =

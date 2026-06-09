@@ -14,15 +14,24 @@ interface CollectionViewProps {
   title: string;
   collectionName: string;
   latestEventId?: string;
+  initialSearchTerm?: string;
 }
 
 export function CollectionView<T extends { _id: string; id?: string }>({
   title,
   collectionName,
   latestEventId,
+  initialSearchTerm = "",
 }: CollectionViewProps) {
   const [data, setData] = useState<T[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
+
+  useEffect(() => {
+    if (initialSearchTerm) {
+      setSearchTerm(initialSearchTerm);
+    }
+  }, [initialSearchTerm]);
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<T | null>(null);

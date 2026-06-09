@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { Speaker } from "@/models/speaker";
+import { logActivity } from "@/lib/activity-logger";
 
 export async function GET(
   request: Request,
@@ -40,6 +41,15 @@ export async function PATCH(
         { status: 404 }
       );
     }
+
+    await logActivity({
+      user: "Admin",
+      type: "human",
+      action: "update",
+      target: "speaker",
+      details: `Updated speaker: ${speaker.fullName}`,
+    });
+
     return NextResponse.json({ success: true, data: speaker });
   } catch (error) {
     return NextResponse.json(
@@ -63,6 +73,15 @@ export async function DELETE(
         { status: 404 }
       );
     }
+
+    await logActivity({
+      user: "Admin",
+      type: "human",
+      action: "delete",
+      target: "speaker",
+      details: `Deleted speaker: ${speaker.fullName}`,
+    });
+
     return NextResponse.json({ success: true, data: { id } });
   } catch (error) {
     return NextResponse.json(

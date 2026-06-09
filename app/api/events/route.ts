@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { connectToDatabase } from "@/lib/db";
 import { Event } from "@/models/event";
+import { logActivity } from "@/lib/activity-logger";
 
 export async function GET() {
   try {
@@ -25,6 +26,14 @@ export async function POST(request: Request) {
     await connectToDatabase();
     const payload = await request.json();
     const event = await Event.create(payload);
+
+    await logActivity({
+      user: "Admin",
+      type: "human",
+      action: "create",
+      target: "event",
+      details: `Created event: ${event.name}`,
+    });
 
     return NextResponse.json({ success: true, data: event }, { status: 201 });
   } catch (error) {
