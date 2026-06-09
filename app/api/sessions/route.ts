@@ -2,10 +2,14 @@ import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { Session } from "@/models/session";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     await connectToDatabase();
-    const sessions = await Session.find({}).sort({ startTime: 1 });
+    const { searchParams } = new URL(request.url);
+    const eventId = searchParams.get("eventId");
+    const query = eventId ? { eventId } : {};
+
+    const sessions = await Session.find(query).sort({ startTime: 1 });
     return NextResponse.json({ success: true, data: sessions });
   } catch (error) {
     return NextResponse.json(

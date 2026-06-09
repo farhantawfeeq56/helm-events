@@ -7,6 +7,12 @@ const volunteerSchema = new Schema(
       required: true,
       trim: true,
     },
+    eventId: {
+      type: Schema.Types.ObjectId,
+      ref: "Event",
+      required: true,
+      index: true,
+    },
     email: {
       type: String,
       required: true,

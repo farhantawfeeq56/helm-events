@@ -46,6 +46,7 @@ interface ImportDialogProps {
   collectionName: string;
   schemaFields: { name: string; label: string }[];
   onImportComplete: () => void;
+  latestEventId?: string;
 }
 
 type Step = "upload" | "mapping" | "preview" | "executing" | "result";
@@ -56,6 +57,7 @@ export function ImportDialog({
   collectionName,
   schemaFields,
   onImportComplete,
+  latestEventId,
 }: ImportDialogProps) {
   const [step, setStep] = useState<Step>("upload");
   const [file, setFile] = useState<File | null>(null);
@@ -156,6 +158,10 @@ export function ImportDialog({
           mappedRow[field] = row[header];
         }
       });
+      // Automatically assign eventId if available and not already mapped
+      if (latestEventId && collectionName !== "events" && !mappedRow.eventId) {
+        mappedRow.eventId = latestEventId;
+      }
       return mappedRow;
     });
   };

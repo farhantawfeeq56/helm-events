@@ -13,11 +13,13 @@ import { getFields, getSearchKey } from "./field-definitions";
 interface CollectionViewProps {
   title: string;
   collectionName: string;
+  latestEventId?: string;
 }
 
 export function CollectionView<T extends { _id: string; id?: string }>({
   title,
   collectionName,
+  latestEventId,
 }: CollectionViewProps) {
   const [data, setData] = useState<T[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -33,7 +35,11 @@ export function CollectionView<T extends { _id: string; id?: string }>({
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/${collectionName}`);
+      const url = new URL(`/api/${collectionName}`, window.location.origin);
+      if (latestEventId && collectionName !== "events") {
+        url.searchParams.append("eventId", latestEventId);
+      }
+      const response = await fetch(url.toString());
       const result = await response.json();
       if (result.success) {
         setData(result.data);
@@ -43,7 +49,7 @@ export function CollectionView<T extends { _id: string; id?: string }>({
     } finally {
       setIsLoading(false);
     }
-  }, [collectionName]);
+  }, [collectionName, latestEventId]);
 
   useEffect(() => {
     fetchData();
@@ -85,6 +91,11 @@ export function CollectionView<T extends { _id: string; id?: string }>({
       ? `/api/${collectionName}/${editingRecord._id || editingRecord.id}`
       : `/api/${collectionName}`;
     const method = isEditing ? "PATCH" : "POST";
+
+    // Automatically assign eventId for new records if not present
+    if (!isEditing && latestEventId && collectionName !== "events" && !formData.eventId) {
+      formData.eventId = latestEventId;
+    }
 
     try {
       const response = await fetch(url, {
@@ -164,6 +175,7 @@ export function CollectionView<T extends { _id: string; id?: string }>({
         collectionName={collectionName}
         schemaFields={fields.map((f: any) => ({ name: f.name, label: f.label }))}
         onImportComplete={fetchData}
+        latestEventId={latestEventId}
       />
     </div>
   );

@@ -16,6 +16,7 @@ const sessionSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "Event",
       required: true,
+      index: true,
     },
     speakerIds: {
       type: [

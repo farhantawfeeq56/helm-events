@@ -2,10 +2,14 @@ import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { Sponsor } from "@/models/sponsor";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     await connectToDatabase();
-    const sponsors = await Sponsor.find({}).sort({ createdAt: -1 });
+    const { searchParams } = new URL(request.url);
+    const eventId = searchParams.get("eventId");
+    const query = eventId ? { eventId } : {};
+
+    const sponsors = await Sponsor.find(query).sort({ createdAt: -1 });
     return NextResponse.json({ success: true, data: sponsors });
   } catch (error) {
     return NextResponse.json(
