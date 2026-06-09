@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { Session } from "@/models/session";
+import "@/models/event";
+import "@/models/speaker";
+import "@/models/room";
 
 export async function GET(
   request: Request,
@@ -9,7 +12,10 @@ export async function GET(
   try {
     await connectToDatabase();
     const { id } = await params;
-    const session = await Session.findById(id);
+    const session = await Session.findById(id)
+      .populate("eventId")
+      .populate("speakerIds")
+      .populate("roomId");
     if (!session) {
       return NextResponse.json(
         { success: false, error: "Session not found" },

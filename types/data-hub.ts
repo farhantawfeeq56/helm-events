@@ -10,6 +10,7 @@ export type Trend = "up" | "down" | "neutral";
 
 export interface Speaker {
   _id: string;
+  eventId: string;
   fullName: string;
   email: string;
   company: string;
@@ -21,6 +22,7 @@ export interface Speaker {
 
 export interface Volunteer {
   _id: string;
+  eventId: string;
   fullName: string;
   email: string;
   role: string;
@@ -30,6 +32,7 @@ export interface Volunteer {
 
 export interface Sponsor {
   _id: string;
+  eventId: string;
   companyName: string;
   tier: SponsorTier;
   contact: string;
@@ -38,6 +41,7 @@ export interface Sponsor {
 
 export interface Attendee {
   _id: string;
+  eventId: string;
   fullName: string;
   email: string;
   organization: string;
@@ -47,6 +51,7 @@ export interface Attendee {
 
 export interface Organizer {
   _id: string;
+  eventId: string;
   fullName: string;
   email: string;
   phone: string;
@@ -56,6 +61,7 @@ export interface Organizer {
 
 export interface Facility {
   _id: string;
+  eventId: string;
   name: string;
   type: string;
   address: string;
@@ -78,9 +84,9 @@ export interface Session {
   _id: string;
   title: string;
   abstract: string;
-  eventId: string;
-  speakerIds: string[];
-  roomId: string;
+  eventId: string | Event;
+  speakerIds: (string | Speaker)[];
+  roomId: string | Room;
   startTime: string;
   endTime: string;
   track: string;
