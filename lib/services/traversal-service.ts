@@ -1,10 +1,12 @@
 import { connectToDatabase } from "@/lib/db";
 import { Session } from "@/models/session";
-import { Incident } from "@/lib/models/incident";
-import { Task } from "@/lib/models/task";
-import { Room } from "@/models/room";
-import { Event } from "@/models/event";
-import { Speaker } from "@/models/speaker";
+import { Incident } from "@/models/incident";
+import { Task } from "@/models/task";
+
+// Ensure related models are registered for populate
+import "@/models/room";
+import "@/models/event";
+import "@/models/speaker";
 
 /**
  * Provides reusable functions to walk the operational graph.

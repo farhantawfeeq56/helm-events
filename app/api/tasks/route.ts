@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
+import { FilterQuery } from "mongoose";
 import { connectToDatabase } from "@/lib/db";
-import { Task } from "@/lib/models/task";
+import { Task, TaskDocument } from "@/models/task";
 import { logActivity } from "@/lib/activity-logger";
 
 export async function GET(request: Request) {
@@ -11,7 +12,7 @@ export async function GET(request: Request) {
     const eventId = searchParams.get("eventId");
     const incidentId = searchParams.get("incidentId");
 
-    const query: any = {};
+    const query: FilterQuery<TaskDocument> = {};
     if (eventId) query.eventId = eventId;
     if (incidentId) query.incidentId = incidentId;
 

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
-import { Incident } from "@/lib/models/incident";
+import { Incident } from "@/models/incident";
 import { logActivity } from "@/lib/activity-logger";
 
 export async function GET(

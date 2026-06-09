@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
-import { Task } from "@/lib/models/task";
+import { Task } from "@/models/task";
 import { logActivity } from "@/lib/activity-logger";
 
 export async function GET(
