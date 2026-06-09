@@ -27,9 +27,26 @@ export function CollectionView<T extends { _id: string; id?: string }>({
 }: CollectionViewProps) {
   const [data, setData] = useState<T[]>([]);
   const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(initialSearchTerm);
+  
+  const [pagination, setPagination] = useState({
+    total: 0,
+    page: 1,
+    limit: 10,
+    totalPages: 0,
+  });
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Handle initialSearchTerm changes from props
+  useEffect(() => {
     if (initialSearchTerm) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSearchTerm(initialSearchTerm);
     }
   }, [initialSearchTerm]);
@@ -43,10 +60,17 @@ export function CollectionView<T extends { _id: string; id?: string }>({
   const fields = useMemo(() => getFields(collectionName), [collectionName]);
   const searchKey = useMemo(() => getSearchKey(collectionName), [collectionName]);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (page = 1, search = debouncedSearchTerm) => {
     setIsLoading(true);
     try {
       const url = new URL(`/api/${collectionName}`, window.location.origin);
+      url.searchParams.append("page", page.toString());
+      url.searchParams.append("limit", pagination.limit.toString());
+      
+      if (search) {
+        url.searchParams.append("search", search);
+      }
+      
       if (latestEventId && collectionName !== "events") {
         url.searchParams.append("eventId", latestEventId);
       }
@@ -57,17 +81,28 @@ export function CollectionView<T extends { _id: string; id?: string }>({
       const result = await response.json();
       if (result.success) {
         setData(result.data);
+        if (result.pagination) {
+          setPagination(result.pagination);
+        }
       }
     } catch (error) {
       console.error("Failed to fetch data:", error);
     } finally {
       setIsLoading(false);
     }
-  }, [collectionName, latestEventId]);
+  }, [collectionName, latestEventId, incidentId, pagination.limit, debouncedSearchTerm]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchData(1, debouncedSearchTerm);
+    // We want to fetch data when these dependencies change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [collectionName, debouncedSearchTerm, latestEventId, incidentId]);
+
+  const handlePageChange = (newPage: number) => {
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+    fetchData(newPage, debouncedSearchTerm);
+  };
 
   const handleAddRecord = () => {
     setEditingRecord(null);
@@ -92,38 +127,40 @@ export function CollectionView<T extends { _id: string; id?: string }>({
       });
       const result = await response.json();
       if (result.success) {
-        fetchData();
+        await fetchData(pagination.page, debouncedSearchTerm);
       }
     } catch (error) {
       console.error("Failed to delete record:", error);
     }
   };
 
-  const handleSaveRecord = async (formData: any) => {
+  const handleSaveRecord = async (formData: unknown) => {
     const isEditing = !!editingRecord;
     const url = isEditing
       ? `/api/${collectionName}/${editingRecord._id || editingRecord.id}`
       : `/api/${collectionName}`;
     const method = isEditing ? "PATCH" : "POST";
 
+    const dataToSend = { ...(formData as Record<string, unknown>) };
+
     // Automatically assign eventId for new records if not present
-    if (!isEditing && latestEventId && collectionName !== "events" && !formData.eventId) {
-      formData.eventId = latestEventId;
+    if (!isEditing && latestEventId && collectionName !== "events" && !dataToSend.eventId) {
+      dataToSend.eventId = latestEventId;
     }
     // Automatically assign incidentId for new tasks if present
-    if (!isEditing && incidentId && collectionName === "tasks" && !formData.incidentId) {
-      formData.incidentId = incidentId;
+    if (!isEditing && incidentId && collectionName === "tasks" && !dataToSend.incidentId) {
+      dataToSend.incidentId = incidentId;
     }
 
     try {
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(dataToSend),
       });
       const result = await response.json();
       if (result.success) {
-        fetchData();
+        await fetchData(pagination.page, debouncedSearchTerm);
       } else {
         alert(result.error || "Failed to save record");
         throw new Error(result.error);
@@ -134,12 +171,12 @@ export function CollectionView<T extends { _id: string; id?: string }>({
     }
   };
 
-  const enhancedColumns: Column<any>[] = [
+  const enhancedColumns: Column<T>[] = [
     ...columns,
     {
       header: "Actions",
-      accessorKey: "_id",
-      cell: (item: any) => (
+      accessorKey: "_id" as keyof T,
+      cell: (item: T) => (
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
@@ -166,19 +203,30 @@ export function CollectionView<T extends { _id: string; id?: string }>({
     <div>
       <CollectionHeader
         title={title}
-        count={data.length}
+        count={pagination.total}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         onAddRecord={handleAddRecord}
         onImportCSV={handleImport}
         onImportExcel={handleImport}
       />
-      <CollectionTable
-        data={data}
-        columns={enhancedColumns}
-        searchKey={searchKey as any}
-        searchTerm={searchTerm}
-      />
+      {isLoading ? (
+        <div className="flex h-64 items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent"></div>
+        </div>
+      ) : (
+        <CollectionTable
+          data={data}
+          columns={enhancedColumns}
+          searchKey={searchKey as keyof T}
+          searchTerm={searchTerm}
+          isServerSide={true}
+          currentPage={pagination.page}
+          totalPages={pagination.totalPages}
+          totalItems={pagination.total}
+          onPageChange={handlePageChange}
+        />
+      )}
       <RecordDialog
         isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
@@ -191,11 +239,13 @@ export function CollectionView<T extends { _id: string; id?: string }>({
         isOpen={isImportOpen}
         onClose={() => setIsImportOpen(false)}
         collectionName={collectionName}
-        schemaFields={fields.map((f: any) => ({ name: f.name, label: f.label }))}
-        onImportComplete={fetchData}
+        schemaFields={fields.map((f: { name: string; label: string }) => ({ name: f.name, label: f.label }))}
+        onImportComplete={() => {
+          // eslint-disable-next-line @typescript-eslint/no-floating-promises
+          fetchData(pagination.page, debouncedSearchTerm);
+        }}
         latestEventId={latestEventId}
       />
     </div>
   );
 }
-

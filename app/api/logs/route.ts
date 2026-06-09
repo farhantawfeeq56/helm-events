@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { APILog } from "@/models/api-log";
+import { getPaginatedResponse } from "@/lib/utils";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     await connectToDatabase();
-    const logs = await APILog.find({}).sort({ timestamp: -1 }).limit(100);
-    return NextResponse.json({ success: true, data: logs });
+    return getPaginatedResponse(APILog, request, {}, ["method", "path"]);
   } catch (error) {
     return NextResponse.json(
       { success: false, error: "Failed to fetch logs" },

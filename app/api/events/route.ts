@@ -1,15 +1,13 @@
 import { NextResponse } from "next/server";
-
 import { connectToDatabase } from "@/lib/db";
 import { Event } from "@/models/event";
 import { logActivity } from "@/lib/activity-logger";
+import { getPaginatedResponse } from "@/lib/utils";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     await connectToDatabase();
-    const events = await Event.find().sort({ createdAt: -1 });
-
-    return NextResponse.json({ success: true, data: events });
+    return getPaginatedResponse(Event, request, {}, ["name", "venue", "city"]);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unable to fetch events.";

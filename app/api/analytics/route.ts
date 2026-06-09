@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { Analytics } from "@/models/analytics";
+import { getPaginatedResponse } from "@/lib/utils";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     await connectToDatabase();
-    const analytics = await Analytics.find({});
-    return NextResponse.json({ success: true, data: analytics });
+    return getPaginatedResponse(Analytics, request, {}, ["name", "value"]);
   } catch (error) {
     return NextResponse.json(
       { success: false, error: "Failed to fetch analytics" },

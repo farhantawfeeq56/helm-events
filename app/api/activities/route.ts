@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { Activity } from "@/models/activity";
+import { getPaginatedResponse } from "@/lib/utils";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     await connectToDatabase();
-    const activities = await Activity.find({}).sort({ timestamp: -1 });
-
-    return NextResponse.json({ success: true, data: activities });
+    return getPaginatedResponse(Activity, request, {}, ["user", "action", "target", "details"]);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unable to fetch activities.";

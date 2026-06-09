@@ -24,6 +24,12 @@ interface CollectionTableProps<T> {
   columns: Column<T>[];
   searchKey: keyof T;
   searchTerm: string;
+  // Server-side pagination props
+  isServerSide?: boolean;
+  currentPage?: number;
+  totalPages?: number;
+  totalItems?: number;
+  onPageChange?: (page: number) => void;
 }
 
 export function CollectionTable<T extends { _id?: string; id?: string }>({
@@ -31,13 +37,18 @@ export function CollectionTable<T extends { _id?: string; id?: string }>({
   columns,
   searchKey,
   searchTerm,
+  isServerSide = false,
+  currentPage: serverPage = 1,
+  totalPages: serverTotalPages = 1,
+  totalItems: serverTotalItems = 0,
+  onPageChange,
 }: CollectionTableProps<T>) {
   const [sortConfig, setSortConfig] = useState<{
     key: keyof T;
     direction: "asc" | "desc";
   } | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const [localPage, setLocalPage] = useState(1);
+  const itemsPerPage = 10;
 
   const handleSort = (key: keyof T) => {
     let direction: "asc" | "desc" = "asc";
@@ -52,6 +63,7 @@ export function CollectionTable<T extends { _id?: string; id?: string }>({
   };
 
   const filteredData = useMemo(() => {
+    if (isServerSide) return data;
     return data.filter((item) => {
       const value = item[searchKey];
       if (typeof value === "string") {
@@ -59,9 +71,10 @@ export function CollectionTable<T extends { _id?: string; id?: string }>({
       }
       return false;
     });
-  }, [data, searchKey, searchTerm]);
+  }, [data, searchKey, searchTerm, isServerSide]);
 
   const sortedData = useMemo(() => {
+    if (isServerSide) return filteredData;
     const sortableItems = [...filteredData];
     if (sortConfig !== null) {
       sortableItems.sort((a, b) => {
@@ -75,14 +88,25 @@ export function CollectionTable<T extends { _id?: string; id?: string }>({
       });
     }
     return sortableItems;
-  }, [filteredData, sortConfig]);
+  }, [filteredData, sortConfig, isServerSide]);
 
   const paginatedData = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
+    if (isServerSide) return sortedData;
+    const startIndex = (localPage - 1) * itemsPerPage;
     return sortedData.slice(startIndex, startIndex + itemsPerPage);
-  }, [sortedData, currentPage]);
+  }, [sortedData, localPage, isServerSide]);
 
-  const totalPages = Math.ceil(sortedData.length / itemsPerPage);
+  const currentPage = isServerSide ? serverPage : localPage;
+  const totalPages = isServerSide ? serverTotalPages : Math.ceil(sortedData.length / itemsPerPage);
+  const totalItemsCount = isServerSide ? serverTotalItems : sortedData.length;
+
+  const handlePageChange = (page: number) => {
+    if (isServerSide && onPageChange) {
+      onPageChange(page);
+    } else {
+      setLocalPage(page);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -136,7 +160,7 @@ export function CollectionTable<T extends { _id?: string; id?: string }>({
       <div className="flex items-center justify-between px-2">
         <p className="text-sm text-slate-500">
           Showing <span className="font-medium">{paginatedData.length}</span> of{" "}
-          <span className="font-medium">{sortedData.length}</span> results
+          <span className="font-medium">{totalItemsCount}</span> results
         </p>
         <div className="flex items-center gap-2">
           <Button
@@ -144,33 +168,47 @@ export function CollectionTable<T extends { _id?: string; id?: string }>({
             size="icon"
             className="h-8 w-8 rounded-lg border-slate-200"
             disabled={currentPage === 1}
-            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
           >
             <CaretLeft size={16} weight="bold" />
           </Button>
           <div className="flex items-center gap-1">
-            {[...Array(totalPages)].map((_, i) => (
-              <Button
-                key={i}
-                variant={currentPage === i + 1 ? "default" : "ghost"}
-                size="icon"
-                className={`h-8 w-8 rounded-lg text-xs font-bold ${
-                  currentPage === i + 1
-                    ? "bg-indigo-600 hover:bg-indigo-700"
-                    : "text-slate-500 hover:text-slate-900"
-                }`}
-                onClick={() => setCurrentPage(i + 1)}
-              >
-                {i + 1}
-              </Button>
-            ))}
+            {/* Show a limited number of page buttons if there are many pages */}
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              let pageNum;
+              if (totalPages <= 5) {
+                pageNum = i + 1;
+              } else if (currentPage <= 3) {
+                pageNum = i + 1;
+              } else if (currentPage >= totalPages - 2) {
+                pageNum = totalPages - 4 + i;
+              } else {
+                pageNum = currentPage - 2 + i;
+              }
+
+              return (
+                <Button
+                  key={pageNum}
+                  variant={currentPage === pageNum ? "default" : "ghost"}
+                  size="icon"
+                  className={`h-8 w-8 rounded-lg text-xs font-bold ${
+                    currentPage === pageNum
+                      ? "bg-indigo-600 hover:bg-indigo-700"
+                      : "text-slate-500 hover:text-slate-900"
+                  }`}
+                  onClick={() => handlePageChange(pageNum)}
+                >
+                  {pageNum}
+                </Button>
+              );
+            })}
           </div>
           <Button
             variant="outline"
             size="icon"
             className="h-8 w-8 rounded-lg border-slate-200"
             disabled={currentPage === totalPages || totalPages === 0}
-            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
           >
             <CaretRight size={16} weight="bold" />
           </Button>

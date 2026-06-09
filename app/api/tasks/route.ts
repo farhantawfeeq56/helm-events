@@ -1,27 +1,19 @@
 import { NextResponse } from "next/server";
-
-import { FilterQuery } from "mongoose";
 import { connectToDatabase } from "@/lib/db";
-import { Task, TaskDocument } from "@/models/task";
+import { Task } from "@/models/task";
 import { logActivity } from "@/lib/activity-logger";
+import { getPaginatedResponse } from "@/lib/utils";
 
 export async function GET(request: Request) {
   try {
     await connectToDatabase();
-    const { searchParams } = new URL(request.url);
-    const eventId = searchParams.get("eventId");
-    const incidentId = searchParams.get("incidentId");
-
-    const query: FilterQuery<TaskDocument> = {};
-    if (eventId) query.eventId = eventId;
-    if (incidentId) query.incidentId = incidentId;
-
-    const tasks = await Task.find(query)
-      .populate("incidentId")
-      .populate("eventId")
-      .sort({ createdAt: -1 });
-
-    return NextResponse.json({ success: true, data: tasks });
+    return getPaginatedResponse(
+      Task,
+      request,
+      {},
+      ["title", "assignedTo", "description"],
+      ["incidentId", "eventId"]
+    );
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unable to fetch tasks.";

@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { SystemHealth } from "@/models/system-health";
+import { getPaginatedResponse } from "@/lib/utils";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     await connectToDatabase();
-    const health = await SystemHealth.find({});
-    return NextResponse.json({ success: true, data: health });
+    return getPaginatedResponse(SystemHealth, request, {}, ["service", "status"]);
   } catch (error) {
     return NextResponse.json(
       { success: false, error: "Failed to fetch health data" },
