@@ -1,5 +1,5 @@
 import { connectToDatabase } from "@/lib/db";
-import { Event } from "@/models/event";
+import { Event, type EventDocument } from "@/models/event";
 import { Speaker } from "@/models/speaker";
 import { Sponsor } from "@/models/sponsor";
 import { Session } from "@/models/session";
@@ -40,42 +40,66 @@ export default async function OperationsPage({
 }: {
   searchParams: Promise<{ collection?: string; view?: string; search?: string; eventId?: string; incidentId?: string }>;
 }) {
-  await connectToDatabase();
   const { collection, view, search, eventId, incidentId } = await searchParams;
+  await connectToDatabase();
 
-  // Fetch counts
-  const [
-    eventCount,
-    speakerCount,
-    sponsorCount,
-    sessionCount,
-    roomCount,
-    volunteerCount,
-    attendeeCount,
-    organizerCount,
-    facilityCount,
-    activityCount,
-    taskCount,
-    incidentCount,
-  ] = await Promise.all([
-    Event.countDocuments(),
-    Speaker.countDocuments(),
-    Sponsor.countDocuments(),
-    Session.countDocuments(),
-    Room.countDocuments(),
-    Volunteer.countDocuments(),
-    Attendee.countDocuments(),
-    Organizer.countDocuments(),
-    Facility.countDocuments(),
-    Activity.countDocuments(),
-    Task.countDocuments(),
-    Incident.countDocuments(),
-  ]);
+  // Initialize variables
+  let eventCount = 0;
+  let speakerCount = 0;
+  let sponsorCount = 0;
+  let sessionCount = 0;
+  let roomCount = 0;
+  let volunteerCount = 0;
+  let attendeeCount = 0;
+  let organizerCount = 0;
+  let facilityCount = 0;
+  let activityCount = 0;
+  let taskCount = 0;
+  let incidentCount = 0;
+  let latestEvent: (EventDocument & { _id: { toString(): string } }) | null = null;
 
-  // Fetch latest event for overview
-  const latestEvent = await Event.findOne()
-    .sort({ createdAt: -1 })
-    .lean();
+  // Conditional data fetching
+  if (!collection) {
+    // Dashboard overview requires all counts and the full latest event
+    const results = await Promise.all([
+      Event.countDocuments(),
+      Speaker.countDocuments(),
+      Sponsor.countDocuments(),
+      Session.countDocuments(),
+      Room.countDocuments(),
+      Volunteer.countDocuments(),
+      Attendee.countDocuments(),
+      Organizer.countDocuments(),
+      Facility.countDocuments(),
+      Activity.countDocuments(),
+      Task.countDocuments(),
+      Incident.countDocuments(),
+      Event.findOne().sort({ createdAt: -1 }).lean(),
+    ]);
+
+    const counts = results.slice(0, 12) as number[];
+    [
+      eventCount,
+      speakerCount,
+      sponsorCount,
+      sessionCount,
+      roomCount,
+      volunteerCount,
+      attendeeCount,
+      organizerCount,
+      facilityCount,
+      activityCount,
+      taskCount,
+      incidentCount,
+    ] = counts;
+    latestEvent = results[12] as (EventDocument & { _id: { toString(): string } }) | null;
+  } else if (!eventId) {
+    // Collection view needs the latest event ID as a fallback if no eventId is provided
+    latestEvent = await Event.findOne()
+      .sort({ createdAt: -1 })
+      .select("_id")
+      .lean() as (EventDocument & { _id: { toString(): string } }) | null;
+  }
 
   if (collection) {
     const titles: Record<string, string> = {
@@ -130,7 +154,7 @@ export default async function OperationsPage({
               <CollectionView
                 title={title}
                 collectionName={collection}
-                latestEventId={eventId || (latestEvent as any)?._id?.toString()}
+                latestEventId={eventId || latestEvent?._id?.toString()}
                 incidentId={incidentId}
                 initialSearchTerm={search}
               />
@@ -334,19 +358,19 @@ export default async function OperationsPage({
                 <div className="space-y-6">
                   <div>
                     <h3 className="text-3xl font-bold text-slate-900">
-                      {(latestEvent as any).name}
+                      {latestEvent.name}
                     </h3>
                     <div className="mt-2 flex flex-wrap gap-4 text-slate-500">
                       <div className="flex items-center gap-1.5">
                         <MapPin size={18} />
                         <span>
-                          {(latestEvent as any).venue}, {(latestEvent as any).city}
+                          {latestEvent.venue}, {latestEvent.city}
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <Clock size={18} />
                         <span>
-                          {new Date((latestEvent as any).startDate).toLocaleDateString(
+                          {latestEvent.startDate && new Date(latestEvent.startDate).toLocaleDateString(
                             "en-US",
                             {
                               month: "short",
@@ -358,7 +382,7 @@ export default async function OperationsPage({
                       </div>
                       <div className="flex items-center gap-1.5">
                         <CheckCircle size={18} className="text-emerald-500" />
-                        <span className="capitalize">{(latestEvent as any).status}</span>
+                        <span className="capitalize">{latestEvent.status}</span>
                       </div>
                     </div>
                   </div>
