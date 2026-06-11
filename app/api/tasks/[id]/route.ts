@@ -18,7 +18,7 @@ export async function GET(
       );
     }
     return NextResponse.json({ success: true, data: task });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { success: false, error: "Failed to fetch task" },
       { status: 500 }
@@ -34,9 +34,18 @@ export async function PATCH(
     await connectToDatabase();
     const { id } = await params;
     const payload = await request.json();
+    const oldTask = await Task.findById(id);
+    if (!oldTask) {
+      return NextResponse.json(
+        { success: false, error: "Task not found" },
+        { status: 404 }
+      );
+    }
+
     const task = await Task.findByIdAndUpdate(id, payload, {
       new: true,
     }).populate("incidentId").populate("eventId");
+    
     if (!task) {
       return NextResponse.json(
         { success: false, error: "Task not found" },
@@ -44,16 +53,21 @@ export async function PATCH(
       );
     }
 
+    let details = `Updated task: ${task.title}`;
+    if (payload.status && payload.status !== oldTask.status) {
+      details = `Status changed from ${oldTask.status} to ${payload.status} for task: ${task.title}`;
+    }
+
     await logActivity({
       user: "Admin",
       type: "human",
       action: "update",
-      target: "task",
-      details: `Updated task: ${task.title}`,
+      target: `task:${task._id}`,
+      details,
     });
 
     return NextResponse.json({ success: true, data: task });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { success: false, error: "Failed to update task" },
       { status: 400 }
@@ -85,7 +99,7 @@ export async function DELETE(
     });
 
     return NextResponse.json({ success: true, data: { id } });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { success: false, error: "Failed to delete task" },
       { status: 500 }

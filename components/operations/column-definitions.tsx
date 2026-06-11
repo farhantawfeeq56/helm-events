@@ -1,5 +1,6 @@
 "use client";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Badge } from "@/components/ui/badge";
 import { Column } from "./collection-table";
 import Link from "next/link";
@@ -243,6 +244,8 @@ export const getColumns = (collectionName: string): Column<any>[] => {
                   ? "bg-amber-50 text-amber-700 border-amber-100"
                   : item.status === "blocked"
                   ? "bg-rose-50 text-rose-700 border-rose-100"
+                  : item.status === "cancelled"
+                  ? "bg-slate-200 text-slate-700 border-slate-300"
                   : "bg-slate-50 text-slate-700 border-slate-100"
               }
             >
@@ -270,6 +273,18 @@ export const getColumns = (collectionName: string): Column<any>[] => {
             ) : (
               <span className="text-xs text-slate-400">Event Level</span>
             ),
+        },
+        {
+          header: "Details",
+          accessorKey: "_id",
+          cell: (item: any) => (
+            <Link
+              href={`/operations/tasks/${item._id}`}
+              className="text-xs font-bold text-indigo-600 hover:underline"
+            >
+              View Details
+            </Link>
+          ),
         },
       ];
     case "incidents":
