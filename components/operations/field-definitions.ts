@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export const getFields = (collectionName: string): any[] => {
   switch (collectionName) {
     case "speakers":
@@ -140,8 +141,12 @@ export const getFields = (collectionName: string): any[] => {
             { label: "In Progress", value: "in-progress" },
             { label: "Completed", value: "completed" },
             { label: "Blocked", value: "blocked" },
+            { label: "Cancelled", value: "cancelled" },
           ],
         },
+        { name: "location", label: "Location", type: "text" },
+        { name: "objective", label: "Objective", type: "textarea" },
+        { name: "expectedOutcome", label: "Expected Outcome", type: "textarea" },
         { name: "description", label: "Description", type: "textarea" },
       ];
     case "incidents":

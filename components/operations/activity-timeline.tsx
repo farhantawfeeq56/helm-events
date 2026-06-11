@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { User, Robot, Clock, Info } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -17,28 +17,44 @@ interface Activity {
   timestamp: string;
 }
 
-export function ActivityTimeline() {
+interface ActivityTimelineProps {
+  target?: string;
+}
+
+export function ActivityTimeline({ target }: ActivityTimelineProps) {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchActivities = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/activities");
-      const result = await response.json();
-      if (result.success) {
-        setActivities(result.data);
-      }
-    } catch (error) {
-      console.error("Failed to fetch activities:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    fetchActivities();
-  }, [fetchActivities]);
+    let mounted = true;
+    
+    const loadActivities = async () => {
+      setIsLoading(true);
+      try {
+        let url = "/api/activities";
+        if (target) {
+          url += `?target=${encodeURIComponent(target)}`;
+        }
+        const response = await fetch(url);
+        const result = await response.json();
+        if (result.success && mounted) {
+          setActivities(result.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch activities:", error);
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadActivities();
+    
+    return () => {
+      mounted = false;
+    };
+  }, [target]);
 
   const formatDate = (dateString: string) => {
     return new Intl.DateTimeFormat("en-US", {
