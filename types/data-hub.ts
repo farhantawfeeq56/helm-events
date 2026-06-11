@@ -148,6 +148,8 @@ export interface Task {
   description: string;
   status: "open" | "in-progress" | "completed" | "blocked";
   assignedTo: string;
+  assignedBy: string;
+  priority: "low" | "medium" | "high";
   createdAt: string;
   updatedAt: string;
 }

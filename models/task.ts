@@ -34,6 +34,16 @@ const taskSchema = new Schema(
       trim: true,
       default: "",
     },
+    assignedBy: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    priority: {
+      type: String,
+      enum: ["low", "medium", "high"],
+      default: "medium",
+    },
   },
   {
     timestamps: true,
