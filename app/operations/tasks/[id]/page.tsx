@@ -18,6 +18,7 @@ import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { StatusTransition, type TaskStatus } from "@/components/operations/task/status-transition";
 import { ActivityTimeline } from "@/components/operations/activity-timeline";
+import { TaskDiscussion } from "@/components/operations/task/task-discussion";
 
 export const dynamic = "force-dynamic";
 
@@ -131,6 +132,18 @@ export default async function TaskDetailPage({
                 <h2 className="text-sm font-black uppercase tracking-widest text-slate-900">Activity Timeline</h2>
               </div>
               <ActivityTimeline target={`task:${task._id}`} />
+            </section>
+
+            {/* Task Discussion */}
+            <section>
+              <TaskDiscussion 
+                taskId={task._id.toString()} 
+                currentUser={{
+                  id: "user_ops_lead",
+                  name: "Operations Lead",
+                  role: "lead"
+                }} 
+              />
             </section>
           </div>
 

@@ -153,3 +153,26 @@ export interface Task {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface TaskMessage {
+  _id: string;
+  taskId: string;
+  sender: {
+    id: string;
+    name: string;
+    role: "volunteer" | "lead" | "commander" | string;
+  };
+  content: string;
+  attachments?: {
+    name: string;
+    url: string;
+    type: string;
+  }[];
+  mentions?: string[];
+  readBy?: {
+    userId: string;
+    timestamp: string;
+  }[];
+  createdAt: string;
+  updatedAt: string;
+}
