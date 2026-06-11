@@ -48,6 +48,7 @@ export async function getPaginatedResponse<T>(
     const search = searchParams.get("search") || "";
     const eventId = searchParams.get("eventId");
     const incidentId = searchParams.get("incidentId");
+    const assignedTo = searchParams.get("assignedTo");
 
     const query: FilterQuery<T> = { ...queryOptions };
     
@@ -59,6 +60,11 @@ export async function getPaginatedResponse<T>(
     if (incidentId) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (query as any).incidentId = incidentId;
+    }
+
+    if (assignedTo) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (query as any).assignedTo = assignedTo;
     }
 
     if (search && searchFields.length > 0) {
