@@ -1,19 +1,29 @@
 "use client";
 
-import { House, User, Database, WarningOctagon } from "@phosphor-icons/react";
+import {
+  House,
+  User,
+  Database,
+  WarningOctagon,
+  ClipboardText,
+  Calendar,
+} from "@phosphor-icons/react";
 import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
+  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import Link from "next/link";
+import { useWorkspace } from "@/lib/context/workspace-context";
+import { WorkspaceSwitcher } from "./workspace-switcher";
 
-const items = [
+const organizerItems = [
   {
     title: "Home",
     url: "/",
@@ -36,12 +46,46 @@ const items = [
   },
 ];
 
+const volunteerItems = [
+  {
+    title: "Dashboard",
+    url: "/volunteer",
+    icon: House,
+  },
+  {
+    title: "My Shifts",
+    url: "/volunteer/shifts",
+    icon: Calendar,
+  },
+  {
+    title: "Tasks",
+    url: "/volunteer/tasks",
+    icon: ClipboardText,
+  },
+  {
+    title: "Incidents",
+    url: "/volunteer/incidents",
+    icon: WarningOctagon,
+  },
+];
+
 export function AppSidebar() {
+  const { workspace } = useWorkspace();
+  const items = workspace === "organizer" ? organizerItems : volunteerItems;
+
   return (
     <Sidebar>
+      <SidebarHeader className="border-b border-sidebar-border/50">
+        <div className="flex items-center px-4 py-2">
+          <span className="font-semibold text-sidebar-foreground">Helm</span>
+        </div>
+        <WorkspaceSwitcher />
+      </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Application</SidebarGroupLabel>
+          <SidebarGroupLabel>
+            {workspace === "organizer" ? "Organizer Workspace" : "Volunteer Workspace"}
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (

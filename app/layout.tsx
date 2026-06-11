@@ -16,6 +16,8 @@ export const metadata: Metadata = {
   description: "Minimal event operations data layer for AI-powered workflows.",
 };
 
+import { WorkspaceProvider } from "@/lib/context/workspace-context";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -32,15 +34,17 @@ export default function RootLayout({
       )}
     >
       <body className="min-h-full">
-        <SidebarProvider>
-          <AppSidebar />
-          <SidebarInset>
-            <header className="flex h-16 shrink-0 items-center gap-2 px-4">
-              <SidebarTrigger className="-ml-1" />
-            </header>
-            {children}
-          </SidebarInset>
-        </SidebarProvider>
+        <WorkspaceProvider>
+          <SidebarProvider>
+            <AppSidebar />
+            <SidebarInset>
+              <header className="flex h-16 shrink-0 items-center gap-2 px-4">
+                <SidebarTrigger className="-ml-1" />
+              </header>
+              {children}
+            </SidebarInset>
+          </SidebarProvider>
+        </WorkspaceProvider>
       </body>
     </html>
   );
