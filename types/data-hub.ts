@@ -146,10 +146,33 @@ export interface Task {
   eventId: string | Event;
   title: string;
   description: string;
-  status: "open" | "in-progress" | "completed" | "blocked";
+  status: "open" | "in-progress" | "completed" | "blocked" | "cancelled" | "escalated";
   assignedTo: string;
   assignedBy: string;
   priority: "low" | "medium" | "high";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type NotificationType = 
+  | "task_assigned" 
+  | "task_updated" 
+  | "task_escalated" 
+  | "task_completed"
+  | "incident_assigned"
+  | "system_alert"
+  | "general";
+
+export interface Notification {
+  _id: string;
+  recipient: string; // Full name or ID
+  type: NotificationType;
+  title: string;
+  message: string;
+  link?: string;
+  read: boolean;
+  priority: "low" | "medium" | "high" | "urgent";
+  sourceId?: string; // ID of the related task, incident, etc.
   createdAt: string;
   updatedAt: string;
 }

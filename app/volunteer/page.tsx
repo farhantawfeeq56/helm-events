@@ -6,8 +6,6 @@ import {
   Clock,
   CheckCircle,
   Warning,
-  User,
-  Info,
   Bell,
   CaretRight,
   UserCircle,
@@ -18,21 +16,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Task } from "@/types/data-hub";
 
-interface Activity {
-  _id: string;
-  user: string;
-  type: "human" | "agent";
-  action: string;
-  target: string;
-  details?: string;
-  timestamp: string;
-}
+import { NotificationFeed } from "@/components/operations/notification-feed";
 
 const VOLUNTEER_NAME = "Volunteer User";
 
 export default function VolunteerDashboard() {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [activities, setActivities] = useState<Activity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -40,19 +29,12 @@ export default function VolunteerDashboard() {
       setIsLoading(true);
       try {
         // In a real app, we'd get the logged-in user's name from auth
-        const [tasksRes, activitiesRes] = await Promise.all([
-          fetch(`/api/tasks?assignedTo=${encodeURIComponent(VOLUNTEER_NAME)}`),
-          fetch("/api/activities?limit=5"),
-        ]);
+        const tasksRes = await fetch(`/api/tasks?assignedTo=${encodeURIComponent(VOLUNTEER_NAME)}`);
 
         const tasksData = await tasksRes.json();
-        const activitiesData = await activitiesRes.json();
 
         if (tasksData.success) {
           setTasks(tasksData.data);
-        }
-        if (activitiesData.success) {
-          setActivities(activitiesData.data);
         }
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
@@ -232,21 +214,14 @@ export default function VolunteerDashboard() {
 
         {/* Notifications Sidebar */}
         <div className="space-y-6">
-          <h2 className="text-xl font-semibold flex items-center gap-2">
-            <Bell size={24} className="text-slate-400" />
-            Recent Updates
-          </h2>
-          <div className="space-y-4">
-            {activities.length === 0 ? (
-              <Card className="p-6 border-dashed bg-slate-50/50 flex flex-col items-center justify-center text-center">
-                <Bell size={24} className="text-slate-300 mb-2" />
-                <p className="text-sm text-slate-500 italic">No recent updates.</p>
-              </Card>
-            ) : (
-              activities.map((activity) => (
-                <ActivityPreview key={activity._id} activity={activity} />
-              ))
-            )}
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <Bell size={24} className="text-slate-400" />
+              Recent Signals
+            </h2>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+            <NotificationFeed recipient={VOLUNTEER_NAME} limit={5} />
           </div>
         </div>
       </div>
@@ -260,6 +235,8 @@ function TaskCard({ task }: { task: Task }) {
     "in-progress": "bg-amber-100 text-amber-700 border-amber-200",
     completed: "bg-emerald-100 text-emerald-700 border-emerald-200",
     blocked: "bg-red-100 text-red-700 border-red-200",
+    cancelled: "bg-slate-100 text-slate-700 border-slate-200",
+    escalated: "bg-destructive/10 text-destructive border-destructive/20",
   };
 
   return (
@@ -310,49 +287,5 @@ function TaskCard({ task }: { task: Task }) {
         </div>
       </CardContent>
     </Card>
-  );
-}
-
-function ActivityPreview({ activity }: { activity: Activity }) {
-  const formatDate = (dateString: string) => {
-    try {
-      return new Intl.DateTimeFormat("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: true,
-      }).format(new Date(dateString));
-    } catch (e) {
-      return "Recently";
-    }
-  };
-
-  const getIcon = () => {
-    if (activity.type === 'agent') return <Info size={18} weight="bold" />;
-    return <User size={18} weight="bold" />;
-  };
-
-  return (
-    <div className="flex gap-4 p-4 rounded-xl border border-slate-100 bg-white shadow-sm hover:shadow-md transition-shadow duration-200">
-      <div className={cn(
-        "h-10 w-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm",
-        activity.type === 'agent' ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'
-      )}>
-        {getIcon()}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-slate-900 truncate">
-          {activity.action} {activity.target}
-        </p>
-        <p className="text-xs text-slate-500 mt-1 line-clamp-1">
-          {activity.details || `Performed by ${activity.user}`}
-        </p>
-        <div className="flex items-center gap-1.5 mt-2">
-          <Clock size={12} className="text-slate-400" />
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">
-            {formatDate(activity.timestamp)}
-          </p>
-        </div>
-      </div>
-    </div>
   );
 }

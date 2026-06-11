@@ -3,6 +3,7 @@ import { connectToDatabase } from "@/lib/db";
 import { Task } from "@/models/task";
 import { logActivity } from "@/lib/activity-logger";
 import { getPaginatedResponse } from "@/lib/utils";
+import { sendNotification } from "@/lib/notification-service";
 
 export async function GET(request: Request) {
   try {
@@ -38,6 +39,18 @@ export async function POST(request: Request) {
       target: "task",
       details: `Created task: ${task.title}`,
     });
+
+    if (task.assignedTo) {
+      await sendNotification({
+        recipient: task.assignedTo,
+        type: "task_assigned",
+        title: "New Task Assigned",
+        message: `You have been assigned a new task: ${task.title}`,
+        priority: task.priority === "high" ? "high" : "medium",
+        sourceId: task._id.toString(),
+        link: `/volunteer/tasks/${task._id}`,
+      });
+    }
 
     return NextResponse.json({ success: true, data: task }, { status: 201 });
   } catch (error) {

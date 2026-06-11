@@ -27,7 +27,7 @@ const taskSchema = new Schema(
       type: String,
       required: true,
       trim: true,
-      enum: ["open", "in-progress", "completed", "blocked", "cancelled"],
+      enum: ["open", "in-progress", "completed", "blocked", "cancelled", "escalated"],
       default: "open",
     },
     location: {
