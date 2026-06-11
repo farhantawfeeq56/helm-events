@@ -13,6 +13,13 @@ const MOCK_INCIDENTS: Incident[] = hermesMockIncidents.map((incident) => ({
       impact: incident.severity === "Critical" ? "high" : "medium",
       status: "Active",
     },
+    {
+      id: "res-2",
+      name: "All Staff",
+      type: "speaker",
+      impact: "low",
+      status: "Notified",
+    }
   ],
   timeline: [
     {
@@ -23,6 +30,14 @@ const MOCK_INCIDENTS: Incident[] = hermesMockIncidents.map((incident) => ({
       type: "incident_report",
       status: "completed",
     },
+    {
+      id: "tm-2",
+      timestamp: "5m later",
+      title: "Initial Assessment",
+      description: "Automated impact analysis completed by Hermes.",
+      type: "investigation",
+      status: "completed",
+    }
   ],
   risks: [
     {
@@ -38,7 +53,7 @@ const MOCK_INCIDENTS: Incident[] = hermesMockIncidents.map((incident) => ({
 // Add some more realistic data for one of the incidents to show off the UI
 const speakerDelayIncident = MOCK_INCIDENTS.find(i => i.id === "speaker-delay");
 if (speakerDelayIncident) {
-  speakerDelayIncident.situation = "Dr. Sarah Chen is delayed due to a multi-vehicle accident on I-95. She is safe but immobile.";
+  speakerDelayIncident.situation = "Dr. Sarah Chen is delayed due to a multi-vehicle accident on I-95. She is safe but currently immobile and will not arrive for at least 30-40 minutes.";
   speakerDelayIncident.affectedResources = [
     { id: "room-main", name: "Main Stage", type: "room", impact: "high", status: "In Use" },
     { id: "speaker-sarah", name: "Dr. Sarah Chen", type: "speaker", impact: "high", status: "Delayed" },
@@ -64,17 +79,17 @@ if (speakerDelayIncident) {
     {
       id: "tm-3",
       timestamp: "09:55 AM",
-      title: "Response Options Generated",
-      description: "Hermes proposed schedule shift or breakout swap.",
+      title: "Response Plan Drafted",
+      description: "Communication plan and schedule adjustments prepared.",
       type: "investigation",
       status: "completed",
     },
     {
       id: "tm-4",
       timestamp: "10:00 AM",
-      title: "Awaiting Approval",
-      description: "Proposed schedule shift sent to Event Director.",
-      type: "mitigation",
+      title: "Executing Communications",
+      description: "Push notifications being dispatched to attendees.",
+      type: "communication",
       status: "in-progress",
     },
   ];
@@ -93,6 +108,58 @@ if (speakerDelayIncident) {
       impact: "medium",
       mitigation: "Proactive communication via push notifications and extra refreshments.",
     },
+  ];
+}
+
+const internetOutageIncident = MOCK_INCIDENTS.find(i => i.id === "internet-outage");
+if (internetOutageIncident) {
+  internetOutageIncident.situation = "Total loss of Wi-Fi connectivity in Hall B. This area hosts all live coding workshops and high-bandwidth demos. Primary ISP reporting a local fiber cut.";
+  internetOutageIncident.affectedResources = [
+    { id: "hall-b", name: "Hall B", type: "room", impact: "high", status: "Critical" },
+    { id: "workshop-1", name: "Next.js Advanced Workshop", type: "session", impact: "high", status: "Interrupted" },
+    { id: "sponsor-1", name: "Vercel Demo Booth", type: "sponsor", impact: "medium", status: "Affected" },
+  ];
+  internetOutageIncident.timeline = [
+    {
+      id: "tm-1",
+      timestamp: "11:20 AM",
+      title: "Outage Detected",
+      description: "Automated network monitoring flagged Hall B gateway as offline.",
+      type: "incident_report",
+      status: "completed",
+    },
+    {
+      id: "tm-2",
+      timestamp: "11:22 AM",
+      title: "Venue IT Notified",
+      description: "Emergency ticket raised with venue engineering team.",
+      type: "investigation",
+      status: "completed",
+    },
+    {
+      id: "tm-3",
+      timestamp: "11:25 AM",
+      title: "Hotspot Deployment",
+      description: "Operations team dispatched with 5G backup units.",
+      type: "mitigation",
+      status: "in-progress",
+    }
+  ];
+  internetOutageIncident.risks = [
+    {
+      id: "risk-1",
+      title: "Sponsor SLA Breach",
+      probability: "medium",
+      impact: "high",
+      mitigation: "Document all downtime and provide complimentary lead retrieval credits.",
+    },
+    {
+      id: "risk-2",
+      title: "Social Media Sentiment Drop",
+      probability: "high",
+      impact: "medium",
+      mitigation: "Immediate public acknowledgement and regular updates.",
+    }
   ];
 }
 
