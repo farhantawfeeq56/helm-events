@@ -4,21 +4,17 @@ import { getIncidentById } from "@/lib/repositories/incident-repository";
 import { 
   ArrowLeft, 
   Clock, 
-  MapPin, 
-  User, 
-  Calendar,
   CheckCircle,
-  Chats,
-  Info,
   Circle,
-  WarningCircle,
-  Broadcast,
-  IdentificationCard,
-  Shield,
   Pulse
 } from "@phosphor-icons/react/dist/ssr";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { Situation } from "@/components/operations/incident/situation";
+import { Impact } from "@/components/operations/incident/impact";
+import { ResponseOptions } from "@/components/operations/incident/response-options";
+import { Risks } from "@/components/operations/incident/risks";
+import { Communications } from "@/components/operations/incident/communications";
 
 export const dynamic = "force-dynamic";
 
@@ -50,16 +46,6 @@ export default async function IncidentDetailPage({
       case "investigating": return "text-amber-600";
       case "in progress": return "text-blue-600";
       default: return "text-slate-600";
-    }
-  };
-
-  const getResourceIcon = (type: string) => {
-    switch (type.toLowerCase()) {
-      case "room": return <MapPin size={24} weight="duotone" />;
-      case "speaker": return <User size={24} weight="duotone" />;
-      case "session": return <Broadcast size={24} weight="duotone" />;
-      case "sponsor": return <IdentificationCard size={24} weight="duotone" />;
-      default: return <Calendar size={24} weight="duotone" />;
     }
   };
 
@@ -101,111 +87,18 @@ export default async function IncidentDetailPage({
 
         <div className="grid gap-8 lg:grid-cols-3 items-start">
           {/* Main Content - Left Column */}
-          <div className="lg:col-span-2 space-y-10">
+          <div className="lg:col-span-2 space-y-12">
             
-            {/* Situation Section */}
-            <section>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-white">
-                  <Info size={18} weight="bold" />
-                </div>
-                <h2 className="text-sm font-black uppercase tracking-widest text-slate-900">Current Situation</h2>
-              </div>
-              <div className="rounded-3xl border-2 border-slate-900 bg-white p-8 shadow-[8px_8px_0px_0px_rgba(15,23,42,1)]">
-                <p className="text-2xl font-bold text-slate-900 leading-snug">
-                  {incident.situation}
-                </p>
-                <div className="mt-6 flex items-center gap-4 border-t border-slate-100 pt-6">
-                  <div className="flex -space-x-2">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="h-8 w-8 rounded-full border-2 border-white bg-slate-200" />
-                    ))}
-                  </div>
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                    Assigned to Incident Response Team Alpha
-                  </p>
-                </div>
-              </div>
-            </section>
+            <Situation situation={incident.situation} />
 
-            {/* Affected Resources Section */}
-            <section>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-white">
-                  <Pulse size={18} weight="bold" />
-                </div>
-                <h2 className="text-sm font-black uppercase tracking-widest text-slate-900">Affected Resources</h2>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                {incident.affectedResources.map((resource) => (
-                  <div key={resource.id} className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 transition-all hover:border-slate-900">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-4">
-                        <div className={cn(
-                          "flex h-12 w-12 items-center justify-center rounded-2xl",
-                          resource.impact === "high" ? "bg-rose-50 text-rose-600" : 
-                          resource.impact === "medium" ? "bg-amber-50 text-amber-600" : "bg-blue-50 text-blue-600"
-                        )}>
-                          {getResourceIcon(resource.type)}
-                        </div>
-                        <div>
-                          <h3 className="font-black text-slate-900 uppercase tracking-tight">{resource.name}</h3>
-                          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{resource.type}</p>
-                        </div>
-                      </div>
-                      <Badge className={cn(
-                        "text-[10px] font-black uppercase tracking-tighter",
-                        resource.impact === "high" ? "bg-rose-100 text-rose-700" : 
-                        resource.impact === "medium" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"
-                      )}>
-                        {resource.impact} Impact
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
+            <ResponseOptions options={incident.responseOptions} />
 
-            {/* Communications Section */}
-            <section>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-white">
-                  <Chats size={18} weight="bold" />
-                </div>
-                <h2 className="text-sm font-black uppercase tracking-widest text-slate-900">Communications</h2>
-              </div>
-              <div className="space-y-4">
-                {incident.communications.length > 0 ? (
-                  incident.communications.map((comm) => (
-                    <div key={comm.id} className="flex gap-6 rounded-3xl border border-slate-200 bg-white p-6">
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
-                        <Chats size={24} weight="duotone" />
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-3">
-                          <span className="text-xs font-black uppercase tracking-widest text-slate-900">{comm.channel}</span>
-                          <span className="h-1 w-1 rounded-full bg-slate-300" />
-                          <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">To: {comm.audience}</span>
-                          <Badge variant="outline" className={cn(
-                            "ml-auto text-[10px] font-black uppercase tracking-widest",
-                            comm.status === "sent" ? "border-emerald-200 text-emerald-600 bg-emerald-50" : "border-slate-200 text-slate-400"
-                          )}>
-                            {comm.status}
-                          </Badge>
-                        </div>
-                        <p className="text-sm font-medium text-slate-600 leading-relaxed italic">
-                          &ldquo;{comm.message}&rdquo;
-                        </p>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="rounded-3xl border border-dashed border-slate-200 p-12 text-center">
-                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No communications dispatched yet</p>
-                  </div>
-                )}
-              </div>
-            </section>
+            <Impact 
+              affectedResources={incident.affectedResources} 
+              impactAnalysis={incident.impactAnalysis} 
+            />
+
+            <Communications communications={incident.communications} />
 
             {/* Timeline Section */}
             <section>
@@ -275,37 +168,7 @@ export default async function IncidentDetailPage({
               </div>
             </section>
 
-            {/* Risks Panel */}
-            <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-              <div className="flex items-center gap-2 mb-8">
-                <WarningCircle size={20} weight="bold" className="text-rose-500" />
-                <h2 className="text-sm font-black uppercase tracking-widest text-slate-900">Risk Assessment</h2>
-              </div>
-              <div className="space-y-8">
-                {incident.risks.map((risk) => (
-                  <div key={risk.id} className="group space-y-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight leading-tight">{risk.title}</h3>
-                      <Badge className={cn(
-                        "text-[8px] font-black uppercase px-2",
-                        risk.impact === "high" ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700"
-                      )}>
-                        {risk.impact}
-                      </Badge>
-                    </div>
-                    <div className="rounded-2xl bg-slate-50 p-4 border border-slate-100 group-hover:border-slate-200 transition-colors">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Shield size={14} weight="bold" className="text-indigo-600" />
-                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-900">Mitigation Strategy</p>
-                      </div>
-                      <p className="text-xs font-medium text-slate-500 leading-relaxed">
-                        {risk.mitigation}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
+            <Risks assessment={incident.riskAssessment} detailedRisks={incident.risks} />
           </div>
         </div>
       </div>

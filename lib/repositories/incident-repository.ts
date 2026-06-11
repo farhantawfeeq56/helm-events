@@ -1,6 +1,29 @@
 import { Incident } from "@/types/incident";
 import { mockIncidents as hermesMockIncidents } from "@/lib/hermes";
 
+/**
+ * INCIDENT REPOSITORY
+ * 
+ * This module acts as the central adapter layer for incident data.
+ * 
+ * FUTURE GCP INTEGRATION:
+ * 1. Firestore: MOCK_INCIDENTS will be replaced by a Firestore collection reference.
+ *    - State persistence will move from memory to Firestore.
+ *    - Real-time updates will be handled via onSnapshot listeners.
+ * 
+ * 2. Vertex AI (GCP):
+ *    - When a new incident is reported, a trigger will invoke the `bridge-cf` Cloud Function.
+ *    - Hermes (Gemini 1.5 Pro) will analyze the incident and populate:
+ *      - situation (summarized from logs)
+ *      - impactAnalysis (cascading effects)
+ *      - riskAssessment (probability/impact)
+ *      - responseOptions (recommended actions)
+ *      - communications (drafted messages)
+ * 
+ * 3. Tool Calling:
+ *    - Approved ResponseOptions will trigger downstream Cloud Functions to update
+ *      schedules, notify staff, or adjust resources.
+ */
 const MOCK_INCIDENTS: Incident[] = hermesMockIncidents.map((incident) => ({
   ...incident,
   situation: incident.description, // Initial fallback
@@ -167,6 +190,13 @@ export async function getAllIncidents(): Promise<Incident[]> {
   return MOCK_INCIDENTS;
 }
 
+/**
+ * Fetches a single incident by its ID.
+ * 
+ * INTEGRATION POINT:
+ * This will eventually fetch from Firestore and use the `bridge-cf` 
+ * to check if real-time AI analysis is currently pending.
+ */
 export async function getIncidentById(id: string): Promise<Incident | undefined> {
   return MOCK_INCIDENTS.find((incident) => incident.id === id);
 }
