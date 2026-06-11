@@ -4,11 +4,11 @@ import { Notification } from "@/models/notification";
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectToDatabase();
-    const { id } = params;
+    const { id } = await params;
     const payload = await request.json();
 
     const notification = await Notification.findByIdAndUpdate(id, payload, {
@@ -37,11 +37,11 @@ export async function PATCH(
 
 export async function DELETE(
   _request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectToDatabase();
-    const { id } = params;
+    const { id } = await params;
 
     const notification = await Notification.findByIdAndDelete(id);
 

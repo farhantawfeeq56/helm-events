@@ -22,27 +22,33 @@ export function NotificationFeed({ recipient, limit = 20, onNewNotificationCount
       const result = await response.json();
       if (result.success) {
         setNotifications(result.data);
-        const unreadCount = result.data.filter((n: Notification) => !n.read).length;
-        if (onNewNotificationCount) {
-          onNewNotificationCount(unreadCount);
-        }
       }
     } catch (error) {
       console.error("Failed to fetch notifications:", error);
     } finally {
       setIsLoading(false);
     }
-  }, [recipient, limit, onNewNotificationCount]);
+  }, [recipient, limit]);
 
   useEffect(() => {
-    const initialize = async () => {
-      await fetchNotifications();
-    };
-    initialize();
+    const unreadCount = notifications.filter((n) => !n.read).length;
+    if (onNewNotificationCount) {
+      onNewNotificationCount(unreadCount);
+    }
+  }, [notifications, onNewNotificationCount]);
+
+  useEffect(() => {
+    // Use a timeout to avoid synchronous setState during effect
+    const timer = setTimeout(() => {
+      fetchNotifications();
+    }, 0);
     
     // Poll for new notifications every 30 seconds
     const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
   }, [fetchNotifications]);
 
   const handleMarkAsRead = async (id: string) => {
@@ -57,10 +63,6 @@ export function NotificationFeed({ recipient, limit = 20, onNewNotificationCount
         setNotifications(prev => 
           prev.map(n => n._id === id ? { ...n, read: true } : n)
         );
-        const newUnreadCount = notifications.filter(n => !n.read && n._id !== id).length;
-        if (onNewNotificationCount) {
-          onNewNotificationCount(newUnreadCount);
-        }
       }
     } catch (error) {
       console.error("Failed to mark notification as read:", error);
@@ -74,12 +76,7 @@ export function NotificationFeed({ recipient, limit = 20, onNewNotificationCount
       });
       const result = await response.json();
       if (result.success) {
-        const wasUnread = notifications.find(n => n._id === id && !n.read);
         setNotifications(prev => prev.filter(n => n._id !== id));
-        if (wasUnread && onNewNotificationCount) {
-          const newUnreadCount = notifications.filter(n => !n.read && n._id !== id).length;
-          onNewNotificationCount(newUnreadCount);
-        }
       }
     } catch (error) {
       console.error("Failed to delete notification:", error);
@@ -100,9 +97,6 @@ export function NotificationFeed({ recipient, limit = 20, onNewNotificationCount
       ));
       
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-      if (onNewNotificationCount) {
-        onNewNotificationCount(0);
-      }
     } catch (error) {
       console.error("Failed to mark all as read:", error);
     }

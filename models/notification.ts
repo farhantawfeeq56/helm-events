@@ -1,4 +1,4 @@
-import { model, models, Schema, type InferSchemaType } from "mongoose";
+import { model, models, Schema, type InferSchemaType, type Model } from "mongoose";
 
 const notificationSchema = new Schema(
   {
@@ -55,5 +55,5 @@ const notificationSchema = new Schema(
 
 export type NotificationDocument = InferSchemaType<typeof notificationSchema>;
 
-export const Notification =
-  models.Notification || model("Notification", notificationSchema);
+export const Notification: Model<NotificationDocument> =
+  models.Notification || model<NotificationDocument>("Notification", notificationSchema);

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
-import { Notification } from "@/models/notification";
+import { FilterQuery } from "mongoose";
+import { Notification, NotificationDocument } from "@/models/notification";
 import { getPaginatedResponse } from "@/lib/utils";
 
 export async function GET(request: Request) {
@@ -9,7 +10,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const recipient = searchParams.get("recipient");
 
-    const query: Record<string, string> = {};
+    const query: FilterQuery<NotificationDocument> = {};
     if (recipient) {
       query.recipient = recipient;
     }

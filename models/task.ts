@@ -1,4 +1,4 @@
-import { model, models, Schema, type InferSchemaType } from "mongoose";
+import { model, models, Schema, type InferSchemaType, type Model } from "mongoose";
 
 const taskSchema = new Schema(
   {
@@ -68,4 +68,4 @@ const taskSchema = new Schema(
 
 export type TaskDocument = InferSchemaType<typeof taskSchema>;
 
-export const Task = models.Task || model("Task", taskSchema);
+export const Task: Model<TaskDocument> = models.Task || model<TaskDocument>("Task", taskSchema);
