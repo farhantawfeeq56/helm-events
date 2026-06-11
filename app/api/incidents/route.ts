@@ -1,23 +1,29 @@
 import { NextResponse } from "next/server";
 
+import { withRoleAuthorization } from "@/lib/auth/authorization";
 import { connectToDatabase } from "@/lib/db";
 import { Incident } from "@/lib/models/incident";
 
-export async function GET() {
-  try {
-    await connectToDatabase();
-    const incidents = await Incident.find().sort({ createdAt: -1 });
+export const GET = withRoleAuthorization(
+  ["organizer", "admin"],
+  async () => {
+    try {
+      await connectToDatabase();
+      const incidents = await Incident.find().sort({ createdAt: -1 });
 
-    return NextResponse.json(incidents, { status: 200 });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Unable to fetch incidents.";
+      return NextResponse.json(incidents, { status: 200 });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unable to fetch incidents.";
 
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
-}
+      return NextResponse.json({ error: message }, { status: 500 });
+    }
+  },
+);
 
-export async function POST(request: Request) {
+export const POST = withRoleAuthorization(["organizer", "admin"], async ({
+  request,
+}) => {
   try {
     await connectToDatabase();
     const payload = await request.json();
@@ -30,4 +36,4 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ error: message }, { status: 400 });
   }
-}
+});

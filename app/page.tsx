@@ -1,7 +1,16 @@
+import { SignOutButton } from "@/components/auth/sign-out-button";
 import { EventForm } from "@/components/forms/event-form";
 import { SpeakerForm } from "@/components/forms/speaker-form";
+import { getAuthSession } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
-export default function Home() {
+export default async function Home() {
+  const session = await getAuthSession();
+
+  if (!session?.user) {
+    redirect("/login");
+  }
+
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.18),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(245,158,11,0.16),_transparent_22%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_100%)] px-6 py-10 text-slate-900">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-10">
@@ -18,6 +27,20 @@ export default function Home() {
               the App Router API stores structured operational data in MongoDB
               Atlas through Mongoose models.
             </p>
+            <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
+              <span className="rounded-full bg-white/70 px-3 py-2">
+                {session.user.name}
+              </span>
+              <span className="rounded-full bg-white/70 px-3 py-2 capitalize">
+                {session.user.role}
+              </span>
+              {session.user.team ? (
+                <span className="rounded-full bg-white/70 px-3 py-2">
+                  {session.user.team}
+                </span>
+              ) : null}
+              <SignOutButton />
+            </div>
           </div>
 
           <div className="rounded-3xl border border-slate-200/80 bg-white/80 p-6 shadow-lg shadow-slate-200/60 backdrop-blur">
