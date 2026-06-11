@@ -1,6 +1,6 @@
 "use client";
 
-import { House, User, Database } from "@phosphor-icons/react";
+import { House, User, Database, WarningOctagon } from "@phosphor-icons/react";
 import {
   Sidebar,
   SidebarContent,
@@ -23,6 +23,11 @@ const items = [
     title: "Agent",
     url: "/agent",
     icon: User,
+  },
+  {
+    title: "Incidents",
+    url: "/incidents",
+    icon: WarningOctagon,
   },
   {
     title: "Event data",
