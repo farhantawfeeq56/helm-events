@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
   Sparkle,
   ArrowUp,
@@ -19,6 +20,7 @@ import { EventContext } from "@/components/agent/event-context";
 import { operationalActions } from "@/lib/constants";
 
 export default function AgentPage() {
+  const router = useRouter();
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -37,7 +39,6 @@ export default function AgentPage() {
       if (msg.incidentData) {
         incidentsMap.set(msg.incidentData.id, {
           ...msg.incidentData,
-          messageId: msg.id
         });
       }
     });
@@ -46,13 +47,6 @@ export default function AgentPage() {
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  const scrollToMessage = (messageId: string) => {
-    const element = document.getElementById(`message-${messageId}`);
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
   };
 
   useEffect(() => {
@@ -255,7 +249,7 @@ export default function AgentPage() {
               {reportedIncidents.map((incident) => (
                 <button
                   key={incident.id}
-                  onClick={() => scrollToMessage(incident.messageId)}
+                  onClick={() => router.push(`/incidents/${incident.id}`)}
                   className="w-full text-left p-3 rounded-xl border border-slate-100 hover:border-sky-200 hover:bg-sky-50 transition-all group"
                 >
                   <div className="flex items-center justify-between mb-1">
