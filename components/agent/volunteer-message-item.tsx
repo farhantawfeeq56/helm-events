@@ -4,6 +4,7 @@ import { Sparkle, Info, Warning } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { Message } from "@/types/agent";
 import { ExecutionChecklist } from "./execution-checklist";
+import { IssueReportCard } from "./issue-report-card";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { IconMap } from "@/lib/constants";
@@ -94,6 +95,11 @@ export function VolunteerMessageItem({ message }: VolunteerMessageItemProps) {
         <div className="w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
           <p className="mb-4 text-slate-700 ml-1 font-medium">{message.content}</p>
           <ExecutionChecklist steps={message.checklist} />
+        </div>
+      ) : message.type === "issue-report" && message.reportData ? (
+        <div className="w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <p className="mb-4 text-slate-700 ml-1 font-medium">{message.content}</p>
+          <IssueReportCard report={message.reportData} />
         </div>
       ) : (
         <div

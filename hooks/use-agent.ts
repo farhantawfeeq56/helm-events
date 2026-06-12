@@ -42,6 +42,7 @@ export function useAgent(role: string = "operations") {
         type: data.type,
         incidentData: data.type === "operational-card" ? data.incidentData : undefined,
         checklist: data.type === "execution-checklist" ? data.checklist : undefined,
+        reportData: data.type === "issue-report" ? data.reportData : undefined,
       };
 
       setMessages((prev) => [...prev, agentMessage]);

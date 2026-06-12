@@ -47,15 +47,28 @@ export interface Incident {
   color: string;
 }
 
+export interface ReportedIssue {
+  id: string;
+  category: "Technical" | "Medical" | "Security" | "Facility" | "Logistics" | "General";
+  description: string;
+  location: string;
+  severity: Severity;
+  extractedSignals: string[];
+  guidance: string;
+  status: string;
+  timestamp: string;
+}
+
 export interface HermesRequest {
   message: string;
-  context?: any;
+  context?: unknown;
 }
 
 export type HermesResponse = 
   | { type: "text"; content: string }
   | { type: "operational-card"; content: string; incidentData: Incident }
-  | { type: "execution-checklist"; content: string; checklist: ChecklistItem[] };
+  | { type: "execution-checklist"; content: string; checklist: ChecklistItem[] }
+  | { type: "issue-report"; content: string; reportData: ReportedIssue };
 
 export const mockIncidents: Incident[] = [
   {
