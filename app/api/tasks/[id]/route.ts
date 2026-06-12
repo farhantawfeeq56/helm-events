@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { Task } from "@/models/task";
 import { logActivity } from "@/lib/activity-logger";
+import { sendNotification } from "@/lib/notification-service";
+import { NotificationType } from "@/types/data-hub";
 
 export async function GET(
   request: Request,
@@ -56,6 +58,46 @@ export async function PATCH(
     let details = `Updated task: ${task.title}`;
     if (payload.status && payload.status !== oldTask.status) {
       details = `Status changed from ${oldTask.status} to ${payload.status} for task: ${task.title}`;
+      
+      // Trigger notification for status change
+      if (task.assignedTo) {
+        let type: NotificationType = "task_updated";
+        let title = "Task Updated";
+        const message = `Task "${task.title}" status changed to ${task.status}`;
+        let priority: "low" | "medium" | "high" | "urgent" = task.priority === "high" ? "high" : "medium";
+
+        if (task.status === "escalated") {
+          type = "task_escalated";
+          title = "Task Escalated";
+          priority = "urgent";
+        } else if (task.status === "completed") {
+          type = "task_completed";
+          title = "Task Completed";
+        }
+
+        await sendNotification({
+          recipient: task.assignedTo,
+          type,
+          title,
+          message,
+          priority,
+          sourceId: task._id.toString(),
+          link: `/volunteer/tasks/${task._id}`,
+        });
+      }
+    }
+
+    // Trigger notification if assignment changed
+    if (payload.assignedTo && payload.assignedTo !== oldTask.assignedTo) {
+      await sendNotification({
+        recipient: payload.assignedTo,
+        type: "task_assigned",
+        title: "New Task Assigned",
+        message: `You have been assigned a new task: ${task.title}`,
+        priority: task.priority === "high" ? "high" : "medium",
+        sourceId: task._id.toString(),
+        link: `/volunteer/tasks/${task._id}`,
+      });
     }
 
     await logActivity({

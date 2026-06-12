@@ -4,6 +4,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
+import { NotificationPanel } from "@/components/operations/notification-panel";
 
 const instrumentSans = Instrument_Sans({
   subsets: ["latin"],
@@ -38,8 +39,13 @@ export default function RootLayout({
           <SidebarProvider>
             <AppSidebar />
             <SidebarInset>
-              <header className="flex h-16 shrink-0 items-center gap-2 px-4">
-                <SidebarTrigger className="-ml-1" />
+              <header className="flex h-16 shrink-0 items-center justify-between gap-2 px-4 border-b">
+                <div className="flex items-center gap-2">
+                  <SidebarTrigger className="-ml-1" />
+                </div>
+                <div className="flex items-center gap-4">
+                  <NotificationPanel recipient="Volunteer User" />
+                </div>
               </header>
               {children}
             </SidebarInset>

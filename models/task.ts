@@ -1,4 +1,4 @@
-import { model, models, Schema, type InferSchemaType } from "mongoose";
+import { model, models, Schema, type InferSchemaType, type Model } from "mongoose";
 
 const taskSchema = new Schema(
   {
@@ -27,7 +27,7 @@ const taskSchema = new Schema(
       type: String,
       required: true,
       trim: true,
-      enum: ["open", "in-progress", "completed", "blocked", "cancelled"],
+      enum: ["open", "in-progress", "completed", "blocked", "cancelled", "escalated"],
       default: "open",
     },
     location: {
@@ -68,4 +68,4 @@ const taskSchema = new Schema(
 
 export type TaskDocument = InferSchemaType<typeof taskSchema>;
 
-export const Task = models.Task || model("Task", taskSchema);
+export const Task: Model<TaskDocument> = models.Task || model<TaskDocument>("Task", taskSchema);
