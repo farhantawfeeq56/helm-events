@@ -6,10 +6,12 @@ import { cn } from "@/lib/utils";
 import { CommunicationPlan } from "@/lib/hermes";
 
 interface CommunicationsProps {
-  communications: CommunicationPlan[];
+  communications?: CommunicationPlan[];
 }
 
 export function Communications({ communications }: CommunicationsProps) {
+  if (!communications) return null;
+
   return (
     <section>
       <div className="flex items-center gap-3 mb-6">

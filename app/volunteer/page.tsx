@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { Task } from "@/types/data-hub";
 
 import { NotificationFeed } from "@/components/operations/notification-feed";
+import { VolunteerHermesAssistant } from "@/components/agent/volunteer-hermes-assistant";
 
 const VOLUNTEER_NAME = "Volunteer User";
 
@@ -214,6 +215,23 @@ export default function VolunteerDashboard() {
 
         {/* Notifications Sidebar */}
         <div className="space-y-6">
+          {/* Need Help Card */}
+          <Card className="bg-slate-900 text-white overflow-hidden border-none shadow-xl">
+            <CardHeader className="pb-2">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="h-2 w-2 rounded-full bg-sky-400 animate-pulse" />
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-400">Hermes AI</span>
+              </div>
+              <CardTitle className="text-xl font-bold tracking-tight">Need Help?</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-slate-400 text-sm mb-4 leading-relaxed">
+                Report issues, ask for directions, or get assistance with your tasks instantly.
+              </p>
+              <VolunteerHermesAssistant variant="inline" />
+            </CardContent>
+          </Card>
+
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold flex items-center gap-2">
               <Bell size={24} className="text-slate-400" />

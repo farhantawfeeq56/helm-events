@@ -39,9 +39,9 @@ export interface Incident {
   timestamp: string;
   description: string;
   impactAnalysis: string[];
-  responseOptions: RecommendedAction[];
-  riskAssessment: RiskAssessment;
-  communications: CommunicationPlan[];
+  responseOptions?: RecommendedAction[];
+  riskAssessment?: RiskAssessment;
+  communications?: CommunicationPlan[];
   executionStatus: string;
   iconName: string;
   color: string;

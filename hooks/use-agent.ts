@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Message } from "@/types/agent";
 
-export function useAgent() {
+export function useAgent(role: string = "operations") {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
 
@@ -26,7 +26,7 @@ export function useAgent() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({ message: text, role }),
       });
 
       if (!response.ok) {
@@ -70,7 +70,7 @@ export function useAgent() {
       let action;
       if (actualIndex !== -1) {
         const incidentMessage = newMessages[actualIndex];
-        action = incidentMessage.incidentData?.responseOptions.find(a => a.id === actionId);
+        action = incidentMessage.incidentData?.responseOptions?.find(a => a.id === actionId);
         
         if (action) {
           newMessages[actualIndex] = {

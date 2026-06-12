@@ -7,11 +7,13 @@ import { RiskAssessment } from "@/lib/hermes";
 import { Risk } from "@/types/incident";
 
 interface RisksProps {
-  assessment: RiskAssessment;
+  assessment?: RiskAssessment;
   detailedRisks: Risk[];
 }
 
 export function Risks({ assessment, detailedRisks }: RisksProps) {
+  if (!assessment) return null;
+
   return (
     <div className="space-y-8">
       {/* High-Level Assessment */}

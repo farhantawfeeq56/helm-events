@@ -65,10 +65,10 @@ const MOCK_INCIDENTS: Incident[] = hermesMockIncidents.map((incident) => ({
   risks: [
     {
       id: "risk-1",
-      title: incident.riskAssessment.explanation,
+      title: incident.riskAssessment?.explanation || "Assessment pending",
       probability: "medium",
-      impact: incident.riskAssessment.level.toLowerCase() as "high" | "medium" | "low",
-      mitigation: incident.riskAssessment.mitigationStrategy,
+      impact: (incident.riskAssessment?.level?.toLowerCase() as "high" | "medium" | "low") || "medium",
+      mitigation: incident.riskAssessment?.mitigationStrategy || "No mitigation strategy defined",
     },
   ],
 }));

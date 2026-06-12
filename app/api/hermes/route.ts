@@ -9,7 +9,7 @@ import { processHermesMessage } from "@/lib/hermes-handler";
  */
 export async function POST(req: NextRequest) {
   try {
-    const { message } = await req.json();
+    const { message, role } = await req.json();
 
     if (!message) {
       return NextResponse.json(
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const response = await processHermesMessage(message);
+    const response = await processHermesMessage(message, role || "operations");
 
     return NextResponse.json(response);
   } catch (error) {

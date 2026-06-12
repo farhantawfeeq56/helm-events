@@ -33,6 +33,29 @@ export const operationalActions = [
   },
 ];
 
+export const volunteerActions = [
+  {
+    label: "Issue Reporting",
+    message: "I need to report an issue with the Wi-Fi in Hall B.",
+    icon: WifiHigh,
+  },
+  {
+    label: "Info Lookup",
+    message: "Where is the nearest medical station?",
+    icon: Warning,
+  },
+  {
+    label: "Task Escalation",
+    message: "I need to escalate a task to the operations team.",
+    icon: UserPlus,
+  },
+  {
+    label: "Task Summary",
+    message: "Summarize my active tasks for this shift.",
+    icon: Clock,
+  },
+];
+
 export const IconMap: Record<string, any> = {
   Clock,
   Handshake,

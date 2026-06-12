@@ -6,10 +6,12 @@ import { cn } from "@/lib/utils";
 import { RiskAssessment as RiskAssessmentType } from "@/lib/hermes";
 
 interface RiskAssessmentProps {
-  risk: RiskAssessmentType;
+  risk?: RiskAssessmentType;
 }
 
 export function RiskAssessment({ risk }: RiskAssessmentProps) {
+  if (!risk) return null;
+
   return (
     <div>
       <h3 className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">

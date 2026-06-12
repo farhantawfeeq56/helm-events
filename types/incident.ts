@@ -39,9 +39,9 @@ export interface Incident {
   affectedResources: AffectedResource[];
   timeline: TimelineEvent[];
   risks: Risk[];
-  riskAssessment: RiskAssessment;
-  responseOptions: RecommendedAction[];
-  communications: CommunicationPlan[];
+  riskAssessment?: RiskAssessment;
+  responseOptions?: RecommendedAction[];
+  communications?: CommunicationPlan[];
   executionStatus: string;
   iconName: string;
   color: string;

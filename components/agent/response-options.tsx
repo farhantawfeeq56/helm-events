@@ -8,7 +8,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface ResponseOptionsProps {
-  options: RecommendedAction[];
+  options?: RecommendedAction[];
   onActionDecision: (id: number, decision: 'approved' | 'modified') => void;
   onModifyPlan: (title: string) => void;
   onMyOwnPlan: () => void;
@@ -16,6 +16,8 @@ interface ResponseOptionsProps {
 
 export function ResponseOptions({ options, onActionDecision, onModifyPlan, onMyOwnPlan }: ResponseOptionsProps) {
   const [decisions, setDecisions] = useState<Record<number, 'approved' | 'modified'>>({});
+
+  if (!options || options.length === 0) return null;
 
   const handleDecision = (id: number, decision: 'approved' | 'modified', title: string) => {
     setDecisions(prev => ({ ...prev, [id]: decision }));

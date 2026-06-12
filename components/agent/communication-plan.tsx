@@ -8,11 +8,13 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface CommunicationPlanProps {
-  communications: CommunicationPlanType[];
+  communications?: CommunicationPlanType[];
 }
 
 export function CommunicationPlan({ communications }: CommunicationPlanProps) {
   const [sentIds, setSentIds] = useState<Set<number>>(new Set());
+
+  if (!communications || communications.length === 0) return null;
 
   const handleSend = (id: number) => {
     setSentIds(prev => new Set(prev).add(id));

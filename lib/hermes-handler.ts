@@ -5,12 +5,45 @@ import { logActivity } from "./activity-logger";
  * Core logic for processing Hermes messages.
  * This is decoupled from Next.js to be portable for GCP Cloud Functions.
  */
-export async function processHermesMessage(message: string): Promise<HermesResponse> {
+export async function processHermesMessage(message: string, role: string = "operations"): Promise<HermesResponse> {
   const lowerText = message.toLowerCase();
+
+  // Volunteer restricted actions
+  if (role === "volunteer") {
+    const blockedKeywords = ["reschedule", "reassign", "cancel", "strategy", "recovery"];
+    if (blockedKeywords.some(kw => lowerText.includes(kw))) {
+      return {
+        type: "text",
+        content: "ACCESS RESTRICTED: I am unable to perform operational changes like reassignments or schedule updates. Please contact your Operations Lead for assistance with this request.",
+      };
+    }
+  }
+
+  // Handle volunteer-specific informational queries
+  if (role === "volunteer") {
+    if (lowerText.includes("medical station")) {
+      return {
+        type: "text",
+        content: "The nearest medical station is located at the East Entrance of Hall B, next to the Information Desk. It is staffed 24/7 during the event.",
+      };
+    }
+    if (lowerText.includes("escalate")) {
+      return {
+        type: "text",
+        content: "I have flagged your request for escalation. An Operations Lead has been notified and will contact you shortly via the Radio channel.",
+      };
+    }
+    if (lowerText.includes("summarize") && lowerText.includes("task")) {
+      return {
+        type: "text",
+        content: "You have 3 active tasks: 1. Monitor Registration Hall B, 2. Distribute lunch vouchers, 3. Assist Speaker at 2 PM. Your next shift change is at 4 PM.",
+      };
+    }
+  }
 
   // Log that Hermes is processing a request
   await logActivity({
-    user: "Hermes",
+    user: role === "volunteer" ? "Hermes (Volunteer Assistant)" : "Hermes",
     type: "agent",
     action: "Processing Query",
     target: "System Intelligence",
@@ -48,10 +81,25 @@ export async function processHermesMessage(message: string): Promise<HermesRespo
       details: `Generated response options for: ${incidentData.title}`,
     });
 
+    let responseContent = `ANALYSIS COMPLETE: ${incidentData.title.toUpperCase()}. RESPONSE OPTIONS GENERATED.`;
+    let filteredIncident = { ...incidentData };
+
+    if (role === "volunteer") {
+      responseContent = `ANALYSIS COMPLETE: ${incidentData.title.toUpperCase()}. I have retrieved the status and impact details for you.`;
+      // Sanitize data for volunteers
+      const { 
+        responseOptions, 
+        riskAssessment, 
+        communications, 
+        ...sanitizedIncident 
+      } = filteredIncident as any;
+      filteredIncident = sanitizedIncident;
+    }
+
     return {
       type: "operational-card",
-      content: `ANALYSIS COMPLETE: ${incidentData.title.toUpperCase()}. RESPONSE OPTIONS GENERATED.`,
-      incidentData: incidentData,
+      content: responseContent,
+      incidentData: filteredIncident as any,
     };
   }
 

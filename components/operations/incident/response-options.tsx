@@ -7,10 +7,12 @@ import { cn } from "@/lib/utils";
 import { RecommendedAction } from "@/lib/hermes";
 
 interface ResponseOptionsProps {
-  options: RecommendedAction[];
+  options?: RecommendedAction[];
 }
 
 export function ResponseOptions({ options }: ResponseOptionsProps) {
+  if (!options || options.length === 0) return null;
+
   return (
     <section>
       <div className="flex items-center gap-3 mb-6">
