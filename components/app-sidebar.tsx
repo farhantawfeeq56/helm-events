@@ -8,6 +8,7 @@ import {
   ClipboardText,
   Calendar,
   Bell,
+  AddressBook,
 } from "@phosphor-icons/react";
 import {
   Sidebar,
@@ -72,6 +73,11 @@ const volunteerItems = [
     title: "Notifications",
     url: "/volunteer/notifications",
     icon: Bell,
+  },
+  {
+    title: "Directory",
+    url: "/volunteer/directory",
+    icon: AddressBook,
   },
 ];
 
