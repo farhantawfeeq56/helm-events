@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { 
   AddressBook, 
   MagnifyingGlass, 
   EnvelopeSimple, 
   Phone, 
-  ChatCircleText
+  ChatCircleText,
+  CircleNotch
 } from "@phosphor-icons/react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,74 +21,60 @@ interface Contact {
   role: string;
   email: string;
   phone: string;
-  status: "Available" | "On-site" | "Busy" | "Off-duty";
+  status: string;
+  shift?: string;
   avatarUrl?: string;
 }
 
-const MOCK_CONTACTS: Contact[] = [
-  {
-    id: "1",
-    name: "Sarah Jenkins",
-    role: "Volunteer Coordinator",
-    email: "sarah.j@helmevents.com",
-    phone: "+1 (555) 123-4567",
-    status: "On-site",
-  },
-  {
-    id: "2",
-    name: "Michael Chen",
-    role: "Venue Lead",
-    email: "m.chen@helmevents.com",
-    phone: "+1 (555) 234-5678",
-    status: "On-site",
-  },
-  {
-    id: "3",
-    name: "Elena Rodriguez",
-    role: "Registration Lead",
-    email: "elena.r@helmevents.com",
-    phone: "+1 (555) 345-6789",
-    status: "Available",
-  },
-  {
-    id: "4",
-    name: "David Park",
-    role: "Sponsor Lead",
-    email: "d.park@helmevents.com",
-    phone: "+1 (555) 456-7890",
-    status: "Busy",
-  },
-  {
-    id: "5",
-    name: "Marcus Thorne",
-    role: "Incident Commander",
-    email: "m.thorne@helmevents.com",
-    phone: "+1 (555) 567-8901",
-    status: "On-site",
-  },
-  {
-    id: "6",
-    name: "Jessica Wu",
-    role: "Volunteer Coordinator",
-    email: "j.wu@helmevents.com",
-    phone: "+1 (555) 678-9012",
-    status: "Off-duty",
-  },
-];
-
 export default function VolunteerDirectoryPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchVolunteers() {
+      try {
+        setIsLoading(true);
+        const response = await fetch("/api/volunteers?limit=100");
+        const data = await response.json();
+        
+        if (data.success) {
+          const mappedContacts: Contact[] = data.data.map((v: any) => ({
+            id: v._id,
+            name: v.fullName,
+            role: v.role,
+            email: v.email,
+            phone: v.phone || "No phone provided",
+            status: v.status || "Available",
+            shift: v.shift,
+          }));
+          setContacts(mappedContacts);
+        } else {
+          setError(data.error || "Failed to fetch volunteers");
+        }
+      } catch (err) {
+        setError("An error occurred while fetching volunteers");
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchVolunteers();
+  }, []);
 
   const filteredContacts = useMemo(() => {
-    return MOCK_CONTACTS.filter(
+    return contacts.filter(
       (contact) =>
         contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         contact.role.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [searchQuery]);
+  }, [searchQuery, contacts]);
 
-  const getStatusColor = (status: Contact["status"]) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
+      case "Active":
       case "On-site":
         return "bg-emerald-500";
       case "Available":
@@ -95,6 +82,7 @@ export default function VolunteerDirectoryPage() {
       case "Busy":
         return "bg-amber-500";
       case "Off-duty":
+      case "Inactive":
         return "bg-slate-400";
       default:
         return "bg-slate-400";
@@ -102,14 +90,13 @@ export default function VolunteerDirectoryPage() {
   };
 
   const getRoleBadgeVariant = (role: string) => {
-    switch (role) {
-      case "Incident Commander":
-        return "destructive";
-      case "Volunteer Coordinator":
-        return "secondary";
-      default:
-        return "outline";
+    if (role.includes("Commander") || role.includes("Lead")) {
+      return "destructive";
     }
+    if (role.includes("Coordinator")) {
+      return "secondary";
+    }
+    return "outline";
   };
 
   return (
@@ -134,7 +121,26 @@ export default function VolunteerDirectoryPage() {
         />
       </div>
 
-      {filteredContacts.length === 0 ? (
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center py-20 text-slate-500">
+          <CircleNotch size={48} className="animate-spin mb-4" />
+          <p>Loading directory...</p>
+        </div>
+      ) : error ? (
+        <Card className="border-red-100 bg-red-50 py-16">
+          <CardContent className="flex flex-col items-center justify-center text-center">
+            <h3 className="text-lg font-semibold text-red-900">Error loading contacts</h3>
+            <p className="text-sm text-red-700 mt-2">{error}</p>
+            <Button 
+              variant="outline" 
+              className="mt-4" 
+              onClick={() => window.location.reload()}
+            >
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
+      ) : filteredContacts.length === 0 ? (
         <Card className="border-dashed py-16 bg-slate-50/50">
           <CardContent className="flex flex-col items-center justify-center text-center">
             <div className="h-16 w-16 rounded-full bg-white shadow-sm flex items-center justify-center mb-4">
@@ -180,12 +186,18 @@ export default function VolunteerDirectoryPage() {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm text-slate-600">
                     <EnvelopeSimple size={16} className="text-slate-400" />
-                    <span>{contact.email}</span>
+                    <span className="truncate">{contact.email}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-slate-600">
                     <Phone size={16} className="text-slate-400" />
                     <span>{contact.phone}</span>
                   </div>
+                  {contact.shift && (
+                    <div className="flex items-center gap-2 text-xs text-indigo-600 bg-indigo-50 px-2 py-1 rounded mt-2">
+                      <CircleNotch size={14} />
+                      <span className="font-medium">Shift: {contact.shift}</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 pt-2">

@@ -31,9 +31,11 @@ const eventSchema = new mongoose.Schema(
   {
     name: String,
     venue: String,
+    city: String,
     startDate: Date,
     endDate: Date,
     description: String,
+    status: String,
   },
   { timestamps: true },
 );
@@ -53,10 +55,12 @@ const speakerSchema = new mongoose.Schema(
 const volunteerSchema = new mongoose.Schema(
   {
     eventId: mongoose.Schema.Types.ObjectId,
-    name: String,
-    role: String,
+    fullName: String,
+    email: String,
     phone: String,
-    currentStatus: String,
+    role: String,
+    shift: String,
+    status: String,
   },
   { timestamps: true },
 );
@@ -80,7 +84,10 @@ const taskSchema = new mongoose.Schema(
     title: String,
     description: String,
     status: String,
+    location: String,
+    priority: String,
     assignedTo: String,
+    assignedBy: String,
   },
   { timestamps: true },
 );
@@ -95,15 +102,29 @@ const Incident =
 const Task = mongoose.models.Task || mongoose.model("Task", taskSchema);
 
 async function seed() {
-  await mongoose.connect(mongoUri, { bufferCommands: false });
+  console.log("Connecting to MongoDB...");
+  await mongoose.connect("mongodb://127.0.0.1:27017/helm-events");
+
+  console.log("Clearing existing data...");
+  await Promise.all([
+    Event.deleteMany({}),
+    Speaker.deleteMany({}),
+    Volunteer.deleteMany({}),
+    Incident.deleteMany({}),
+    Task.deleteMany({}),
+  ]);
+
+  console.log("Seeding data...");
 
   const event = await Event.create({
     name: "Helm Event Operations Summit 2026",
     venue: "Bangalore International Exhibition Centre",
+    city: "Bangalore",
     startDate: new Date("2026-07-18T08:00:00+05:30"),
     endDate: new Date("2026-07-18T19:00:00+05:30"),
     description:
       "One-day event operations summit covering speaker logistics, volunteer coordination, and live incident response.",
+    status: "active",
   });
 
   const speakers = await Speaker.insertMany([
@@ -136,38 +157,75 @@ async function seed() {
   const volunteers = await Volunteer.insertMany([
     {
       eventId: event._id,
-      name: "Arjun Nair",
+      fullName: "Arjun Nair",
+      email: "arjun.nair@example.com",
       role: "Registration Desk",
       phone: "+91 98800 22001",
-      currentStatus: "on-site",
+      shift: "Morning (08:00 - 13:00)",
+      status: "Active",
     },
     {
       eventId: event._id,
-      name: "Priya Das",
+      fullName: "Priya Das",
+      email: "priya.das@example.com",
       role: "Speaker Green Room",
       phone: "+91 98800 22002",
-      currentStatus: "on-site",
+      shift: "Morning (08:00 - 13:00)",
+      status: "Active",
     },
     {
       eventId: event._id,
-      name: "Kiran Babu",
+      fullName: "Kiran Babu",
+      email: "kiran.babu@example.com",
       role: "AV Support Runner",
       phone: "+91 98800 22003",
-      currentStatus: "dispatched",
+      shift: "Full Day (08:00 - 18:00)",
+      status: "Active",
     },
     {
       eventId: event._id,
-      name: "Shreya Kulkarni",
+      fullName: "Shreya Kulkarni",
+      email: "shreya.k@example.com",
       role: "Room Turnover",
       phone: "+91 98800 22004",
-      currentStatus: "break",
+      shift: "Afternoon (13:00 - 18:00)",
+      status: "Active",
     },
     {
       eventId: event._id,
-      name: "Vikram Shah",
+      fullName: "Vikram Shah",
+      email: "vikram.s@example.com",
       role: "VIP Escort",
       phone: "+91 98800 22005",
-      currentStatus: "on-call",
+      shift: "Afternoon (13:00 - 18:00)",
+      status: "Active",
+    },
+    {
+      eventId: event._id,
+      fullName: "Sarah Jenkins",
+      email: "sarah.j@helmevents.com",
+      role: "Volunteer Coordinator",
+      phone: "+1 (555) 123-4567",
+      shift: "Full Day (08:00 - 18:00)",
+      status: "Active",
+    },
+    {
+      eventId: event._id,
+      fullName: "Michael Chen",
+      email: "m.chen@helmevents.com",
+      role: "Venue Lead",
+      phone: "+1 (555) 234-5678",
+      shift: "Full Day (08:00 - 18:00)",
+      status: "Active",
+    },
+    {
+      eventId: event._id,
+      fullName: "Volunteer User",
+      email: "volunteer@example.com",
+      role: "General Support",
+      phone: "+1 (555) 000-0000",
+      shift: "Morning (08:00 - 13:00)",
+      status: "Active",
     },
   ]);
 
@@ -209,7 +267,10 @@ async function seed() {
       description:
         "Inspect HDMI splitter and restore confidence monitor signal before keynote.",
       status: "in-progress",
+      location: "Main Stage",
+      priority: "high",
       assignedTo: "Kiran Babu",
+      assignedBy: "Operations Control",
     },
     {
       incidentId: incidents[0]._id,
@@ -218,7 +279,10 @@ async function seed() {
       description:
         "Move spare monitor from breakout room storage to main stage holding area.",
       status: "open",
+      location: "Breakout Room Storage",
+      priority: "medium",
       assignedTo: "Priya Das",
+      assignedBy: "Operations Control",
     },
     {
       incidentId: incidents[1]._id,
@@ -227,7 +291,10 @@ async function seed() {
       description:
         "Inform programming desk and hold speaker intro by five minutes if needed.",
       status: "completed",
+      location: "Programming Desk",
+      priority: "medium",
       assignedTo: "Vikram Shah",
+      assignedBy: "Operations Control",
     },
     {
       incidentId: incidents[2]._id,
@@ -236,7 +303,10 @@ async function seed() {
       description:
         "Redirect walk-in attendees to the secondary registration table near Hall B.",
       status: "in-progress",
+      location: "Hall B",
+      priority: "high",
       assignedTo: "Arjun Nair",
+      assignedBy: "Operations Control",
     },
     {
       incidentId: incidents[2]._id,
@@ -245,14 +315,50 @@ async function seed() {
       description:
         "Station one volunteer at the east entrance to guide attendees into two lines.",
       status: "open",
+      location: "East Entrance",
+      priority: "medium",
       assignedTo: "Shreya Kulkarni",
+      assignedBy: "Operations Control",
     },
     {
       eventId: event._id,
       title: "Review safety protocols with all staff",
       description: "Brief staff on emergency exits and evacuation plans.",
       status: "open",
-      assignedTo: "Lead Organizer",
+      location: "All Areas",
+      priority: "high",
+      assignedTo: "Michael Chen",
+      assignedBy: "Operations Control",
+    },
+    {
+      eventId: event._id,
+      title: "Restock badge holders at Reg Desk A",
+      description: "Registration Desk A is running low on badge holders. Please bring two boxes from the storage room.",
+      status: "open",
+      location: "Registration Desk A",
+      priority: "high",
+      assignedTo: "Volunteer User",
+      assignedBy: "Sarah Jenkins",
+    },
+    {
+      eventId: event._id,
+      title: "Check VIP lounge water supply",
+      description: "Ensure there are enough water bottles in the VIP lounge fridge.",
+      status: "in-progress",
+      location: "VIP Lounge",
+      priority: "medium",
+      assignedTo: "Volunteer User",
+      assignedBy: "Sarah Jenkins",
+    },
+    {
+      eventId: event._id,
+      title: "Distribute lunch vouchers to volunteers",
+      description: "Take the envelope of vouchers and distribute to volunteers at the information desks.",
+      status: "open",
+      location: "Information Desks",
+      priority: "low",
+      assignedTo: "Volunteer User",
+      assignedBy: "Operations Control",
     },
   ]);
 
