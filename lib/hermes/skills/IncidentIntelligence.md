@@ -1,48 +1,74 @@
 # Skill: Incident Intelligence
 
-Incident Intelligence is the primary skill used by Hermes to transform raw data and field reports into structured operational knowledge.
+Incident Intelligence is the primary skill used by Hermes to transform raw data and field reports into structured operational knowledge. This skill is responsible for populating the `Incident` data contract used by the `OperationalCard` UI component.
 
-## 1. Signal Extraction
+## 1. The Incident Data Contract (OperationalCard)
 
-Hermes processes unstructured text from volunteers and staff to extract actionable "signals."
+Every incident identified by Hermes must conform to the following schema, mapping directly to the `Incident` interface in `lib/hermes.ts`.
 
-### Keyword Mapping
-Signals are identified using a weighted mapping of event-specific keywords:
-- **Technical**: Wi-Fi, login, audio, projector, power, outlet, laptop.
-- **Medical**: Faint, injury, dizzy, allergic, first aid, medic.
-- **Security**: Dispute, unauthorized, lost, crowd, gate-crash.
-- **Facility**: Leak, temperature, signage, bathroom, catering, trash.
-- **Logistics**: Transport, shuttle, parking, delivery, pallet.
+### TypeScript Interface
+```typescript
+export interface Incident {
+  id: string;
+  title: string;
+  severity: "Critical" | "High" | "Medium" | "Low";
+  status: string;
+  timestamp: string;
+  description: string; // Narrative Summary
+  impactAnalysis: string[];
+  responseOptions?: RecommendedAction[];
+  riskAssessment?: RiskAssessment;
+  communications?: CommunicationPlan[];
+  executionStatus: string;
+  iconName: string; // Phosphor Icon name
+  color: string; // Tailwind color class (e.g., "red", "amber", "blue")
+}
+```
 
-### Contextual Inference
-Beyond keywords, Hermes analyzes the urgency of the language used to determine if a signal indicates an active incident or a routine request.
+### JSON Schema Snippet
+```json
+{
+  "id": "wifi-outage-hall-b",
+  "title": "Critical Wi-Fi Outage",
+  "severity": "Critical",
+  "status": "Investigating",
+  "timestamp": "2m ago",
+  "description": "A major backbone switch in Hall B has failed, resulting in total loss of connectivity for 50+ exhibitor booths and the workshop stage.",
+  "impactAnalysis": [
+    "Exhibitor Demos",
+    "Workshop Live Streams",
+    "Attendee App Usage in Hall B"
+  ],
+  "executionStatus": "Initial alert received. Diagnosing hardware fault.",
+  "iconName": "WifiHigh",
+  "color": "red"
+}
+```
 
-## 2. Triage & Severity Assignment
+## 2. Signal Extraction & Narrative Summary
 
-Every incident is assigned a severity level based on its impact on safety, schedule, and reputation.
+Hermes processes unstructured text to extract actionable "signals" and generates a **Narrative Summary** (stored in the `description` field).
 
-| Severity | Criteria | Example |
-| :--- | :--- | :--- |
-| **Critical** | Immediate safety risk, total failure of a core system, or event-stopping issue. | Major Wi-Fi outage, Medical emergency on Main Stage. |
-| **High** | Significant impact on attendee experience or schedule of a major session. | Keynote speaker delay, Room double-booking. |
-| **Medium** | Notable operational friction that can be managed without major rescheduling. | Volunteer no-show, Sponsor power request. |
-| **Low** | Routine operational task or minor inconvenience. | Request for more trash bins, 5-minute schedule shift. |
+- **Objective**: Synthesize multiple reports into a single, cohesive explanation of the issue.
+- **Tone**: Clinical and precise.
+- **Example**: Instead of "Someone said the wifi is down and another person is complaining about their demo," Hermes writes: "Connectivity failure reported in Hall B; affecting both public and private SSIDs."
 
-## 3. Incident Categorization
+## 3. Triage & Severity Assignment
 
-Hermes groups signals into categories to route them to the correct response teams.
+Severity is determined by the potential for event disruption:
 
-- **Medical**: Issues requiring first aid or emergency services.
-- **Security**: Safety concerns, access control, or behavioral issues.
-- **Technical**: AV, IT, or hardware failures.
-- **Facility**: Infrastructure, HVAC, or venue maintenance.
-- **Logistics**: Flow of people, materials, or vehicles.
-- **General**: Attendee inquiries or non-specific operational support.
+| Severity | Criteria |
+| :--- | :--- |
+| **Critical** | Immediate safety risk or total failure of a core event system (e.g., Main Stage AV, Venue-wide Wi-Fi). |
+| **High** | Significant impact on major session schedules or high-priority attendee experiences. |
+| **Medium** | Notable operational friction that can be managed without major rescheduling (e.g., single booth power issue). |
+| **Low** | Routine operational task or minor inconvenience. |
 
 ## 4. Impact Analysis Logic
 
-Hermes performs a multi-dimensional impact analysis for every incident:
-1. **Schedule Impact**: Does this cause delays?
-2. **Resource Impact**: What staff/tools are required to fix this?
-3. **Attendee Impact**: How many people are affected?
-4. **Contractual/Sponsor Impact**: Does this violate an agreement or affect a partner?
+Hermes must identify at least three specific areas of impact for any incident of Medium severity or higher. These are displayed as tags in the UI to help operators quickly understand the scope.
+
+- **Schedule**: Delays or cancellations.
+- **Resource**: Diversion of staff or equipment.
+- **Attendee**: Direct effect on the guest experience.
+- **Partner/Sponsor**: Impact on contractual obligations or VIPs.
