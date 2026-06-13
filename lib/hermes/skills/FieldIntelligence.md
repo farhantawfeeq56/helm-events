@@ -1,37 +1,56 @@
 # Skill: Field Intelligence
 
-Field Intelligence provides Hermes with spatial and situational awareness. It maps the digital data to the physical layout of the event venue.
+Field Intelligence provides Hermes with spatial awareness and allows for the processing of field reports from volunteers. It populates the `IssueReportCard` (ReportedIssue) data contract.
 
-## 1. Spatial Awareness
+## 1. The Issue Report Data Contract (IssueReportCard)
 
-Hermes maintains a map of the venue's logical structure:
-- **Zones**: Main Stage, Expo Hall, Breakout Rooms, Registration.
-- **Nodes**: Specific locations like "Booth 42", "Hall B entrance", or "Room 101 AV booth".
-- **Connectivity**: Understanding the walking distance and flow between zones (e.g., "Hall A is adjacent to the Dining Plaza").
+When a volunteer submits a report, Hermes parses the text and maps it to the `ReportedIssue` interface, adding "Extracted Signals" and "Guidance" to assist operators.
 
-## 2. Volunteer Signal Processing
+### TypeScript Interface
+```typescript
+export interface ReportedIssue {
+  id: string;
+  category: "Technical" | "Medical" | "Security" | "Facility" | "Logistics" | "General";
+  description: string;
+  location: string;
+  severity: "Critical" | "High" | "Medium" | "Low";
+  extractedSignals: string[];
+  guidance: string;
+  status: string;
+  timestamp: string;
+}
+```
 
-Field reports often come from non-expert volunteers using natural language. Field Intelligence parses these to identify:
-- **Where**: Extraction of room numbers or landmark references.
-- **What**: Identification of the core issue (refer to *Incident Intelligence*).
-- **Status**: Is the reporter on-site? Are they requesting immediate backup?
+### JSON Schema Snippet
+```json
+{
+  "id": "rep-456",
+  "category": "Facility",
+  "location": "Main Stage - Stage Right",
+  "description": "Large water spill near the primary speaker monitor. Risk of slip and equipment damage.",
+  "severity": "High",
+  "extractedSignals": ["Liquid Spill", "Electrical Hazard", "Stage Right"],
+  "guidance": "Cordon off the area immediately. Dispatch janitorial for cleanup and AV tech to check the monitor cables.",
+  "status": "New",
+  "timestamp": "1m ago"
+}
+```
 
-## 3. Crowd & Flow Monitoring
+## 2. Signal Extraction (Extracted Signals)
 
-(Conceptual Integration)
-Hermes can ingest data from:
-- **Scan Data**: High volumes of badge scans at a particular door indicating a bottleneck.
-- **Wi-Fi Heatmaps**: High density of devices in a lobby indicating a crowding risk.
-- **Feedback Terminals**: "Sad face" ratings at a bathroom indicating a facility issue.
+Hermes identifies specific entities and risks within a field report. These signals are displayed as keyword tags in the UI to allow for rapid triage.
 
-## 4. Resource Location Tracking
+- **Keywords**: "Spill", "Crowd", "Lost", "Heat", "Noise".
+- **Equipment**: "Monitor", "Hotspot", "Radio", "Mic".
+- **Risk Markers**: "Emergency", "ASAP", "Hazard", "Safety".
 
-Hermes maintains awareness of where key resources are located:
-- **Equipment**: Locations of 5G hotspots, spare projectors, and medical kits.
-- **Personnel**: Which teams are currently assigned to which zones.
+## 3. Operational Guidance
 
-## 5. Wayfinding Logic
+The `guidance` field is Hermes' immediate advice for the person who received the report. It should be:
+- **First-Response Oriented**: What to do in the first 60 seconds.
+- **Safety-First**: Prioritize containing the situation.
+- **Example**: "Keep the crowd back 5 feet. Do not touch the spilled liquid until identified."
 
-When generating strategies that involve relocation (e.g., "Move workshop to Room 101"), Field Intelligence provides the wayfinding context:
-- "Room 101 is on the second floor; requires elevator access for heavy equipment."
-- "The path to Hall B is currently congested; recommend using the service corridor."
+## 4. Spatial Mapping
+
+Field Intelligence maps the `location` string to the known venue layout. If a volunteer says "near the big screen," Hermes translates this to "Main Stage South" or "Hall A Entrance" based on the event's logical node map.

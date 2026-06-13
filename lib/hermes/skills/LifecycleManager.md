@@ -1,43 +1,49 @@
 # Skill: Lifecycle Manager
 
-The Lifecycle Manager tracks the evolution of an incident from the first signal to final resolution and post-event analysis.
+The Lifecycle Manager tracks the evolution of an incident from the first signal to final resolution. It is responsible for the granular tracking of progress via the `ExecutionChecklist` and the `Timeline` updates.
 
-## 1. Incident State Machine
+## 1. Execution Checklist Data Contract
 
-Hermes monitors and manages the status of every incident through four primary states:
+Once an action is approved, Hermes generates or refines a set of `ChecklistItem` objects. These are rendered in the `ExecutionChecklist` UI component.
 
-1. **Reported / Investigating**: A signal has been received and Hermes is gathering context or awaiting human triage.
-2. **Open**: The incident is confirmed and requires a strategy.
-3. **In Progress**: A `RecommendedAction` has been approved and tasks are being executed.
-4. **Resolved**: The immediate issue is fixed, and the system is back to a steady state.
+### TypeScript Interface
+```typescript
+export interface ChecklistItem {
+  text: string;
+  status: "pending" | "in-progress" | "completed";
+}
+```
 
-## 2. Execution Checklist Logic
+### JSON Schema Snippet
+```json
+[
+  { "text": "Locate backup 5G hotspots in storage", "status": "completed" },
+  { "text": "Deliver hotspots to Hall B Information Desk", "status": "in-progress" },
+  { "text": "Test connectivity with TechCorp demo laptop", "status": "pending" }
+]
+```
 
-When a strategy is selected, Hermes generates a granular `ChecklistItem` array.
+## 2. Status Transition Logic
 
-### Step Tracking
-- **Pending**: Task is defined but not yet started.
-- **In-Progress**: Assigned personnel are currently working on the task.
-- **Completed**: Task is finished and verified.
+Hermes monitors the status of these items and propagates the overall incident state:
 
-### Dynamic Adjustment
-If a task fails or a new bottleneck is identified, the Lifecycle Manager can inject new steps into the checklist in real-time.
+- **All Pending**: Incident is `Open`.
+- **At least one In-Progress or Completed**: Incident is `In Progress`.
+- **All Completed**: Incident is ready for the `Resolved` state.
 
-## 3. Post-Incident Intelligence (AAR)
+## 3. The Activity Log (Timeline)
 
-After an incident is marked as `Resolved`, Hermes prepares data for an **After Action Report (AAR)**.
+The `executionStatus` field in the `Incident` model acts as the "Heartbeat" of the incident. The Lifecycle Manager updates this field to reflect the most recent action taken, providing a chronological narrative of the response.
 
-### Data Capture
-- **Timeline**: Exact times of report, first action, and resolution.
-- **Efficacy**: Which `RecommendedAction` was chosen and how successful was it?
-- **Resource Load**: Which teams were diverted and for how long?
+### Example Timeline Updates:
+1. `10:00` - "Incident detected: Wi-Fi failure in Hall B."
+2. `10:05` - "Strategy approved: Deploy cellular hotspots."
+3. `10:08` - "Task assigned: Volunteer John D. retrieving hotspots."
+4. `10:15` - "Connectivity restored at Booth 42."
 
-### Pattern Matching
-Hermes compares the incident to historical data to identify recurring issues (e.g., "This is the third power failure in Hall B this month").
+## 4. Post-Incident Analysis (AAR)
 
-## 4. Archival & Learning
-
-Resolved incidents are stored in a dedicated historical collection. This data is used to:
-- Refine Risk Assessment accuracy.
-- Improve Strategy Generation (Operational Plays).
-- Provide stakeholders with a comprehensive "Incident Log" at the end of the event.
+The Lifecycle Manager preserves the history of an incident for the **After Action Report**. It tracks:
+- **MTTR (Mean Time To Resolution)**: Total duration from report to resolution.
+- **Task Velocity**: How quickly checklist items were completed.
+- **Resource Efficiency**: Which team members were involved and for how long.

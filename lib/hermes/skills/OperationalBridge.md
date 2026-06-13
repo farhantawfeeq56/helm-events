@@ -1,39 +1,49 @@
 # Skill: Operational Bridge
 
-The Operational Bridge is the communication and execution layer of Hermes. It ensures that decisions made in the dashboard are effectively communicated to the right people at the right time.
+The Operational Bridge is the execution layer of Hermes. It translates high-level strategic decisions into concrete system actions, communications, and data state changes.
 
-## 1. Multi-Channel Strategy
+## 1. The Execution Layer
 
-Hermes manages communications across four primary channels, each suited for different levels of urgency and detail.
+When a `RecommendedAction` is approved by an operator, the Operational Bridge triggers the following:
 
-| Channel | Best For... | Audience |
-| :--- | :--- | :--- |
-| **Radio** | Critical, instant alerts requiring immediate physical action. | Security, Ops Directors, Medical. |
-| **Push** | High-priority updates for attendees or broad staff groups. | All Attendees, All Staff. |
-| **SMS** | Direct, guaranteed delivery for specific individuals or teams. | Backup Volunteers, Speakers. |
-| **Email** | Non-urgent, detailed documentation or formal notices. | Sponsors, Stakeholders. |
+1.  **State Transition**: Updates the incident status from `Open` to `In Progress`.
+2.  **Task Creation**: Converts the `steps` (ChecklistItems) into active assignments for field staff.
+3.  **Communication Dispatch**: Sends the `CommunicationPlan` messages across the specified channels.
 
-## 2. Audience Segmentation
+## 2. Multi-Channel Communications
 
-Hermes maintains dynamic groups to ensure messages are relevant and noise is minimized:
-- **All Attendees**: Broad event-wide updates.
-- **Segmented Attendees**: Specific to a room, track, or ticket type (e.g., "Hall B Attendees").
-- **Operations Staff**: The core team managing the event.
-- **Volunteers**: Field staff requiring specific guidance.
-- **External Partners**: Sponsors, Venue IT, Catering.
+Hermes manages a `CommunicationPlan[]` array for each incident, ensuring consistent messaging across different stakeholders.
 
-## 3. Message Translation
+### TypeScript Interface
+```typescript
+export interface CommunicationPlan {
+  id: number;
+  channel: "SMS" | "Push" | "Email" | "Radio";
+  audience: string;
+  message: string;
+  status: "draft" | "sent";
+}
+```
 
-Hermes "translates" a single operational decision into multiple context-aware messages:
+### Channel Specifics
+- **SMS**: Urgent alerts for Lead Staff and Speakers. (Action-oriented, short).
+- **Push**: Mass notifications for Attendees. (Tone: Helpful, transparent).
+- **Radio**: Scripted prompts for volunteers and security. (Tone: Tactical, phonetic where applicable).
+- **Email**: Formal updates for sponsors, venue management, or post-event logs.
 
-**Scenario: A Room Change**
-- **To Attendees (Push)**: "Update: The AI Ethics workshop has moved to Room 204. See you there!"
-- **To Staff (Radio)**: "Ops: AI Ethics moved to 204. Re-stationing entrance staff now."
-- **To Speaker (SMS)**: "Hi Dr. Smith, your session has been moved to Room 204 due to technical issues in Hall A. An assistant is on their way to help you move."
-- **To Venue (Email)**: "Formal request: Update digital signage for Hall A and Room 204 to reflect the 2:00 PM session change."
+## 3. CRUD & State Management
 
-## 4. Feedback Loop
+The Bridge is responsible for the "Approved Plan to Reality" pipeline:
 
-The Operational Bridge doesn't just send messages; it tracks delivery and response:
-- **Status Tracking**: Messages move from `draft` to `sent`.
-- **Acknowledgement**: (Future Capability) Tracking "read" receipts or "Roger" responses from staff.
+- **Pending -> Approved**: When an action is selected in the UI, the Bridge updates the database to reflect this choice.
+- **Volunteer Assignments**: The Bridge maps specific `ChecklistItem` entries to the Volunteer Portal's task queue based on the `category` of the incident.
+- **Activity Logging**: Every transition triggered by the Bridge is logged in the `executionStatus` terminal of the `OperationalCard`.
+
+## 4. UI Feedback Loop
+
+The `executionStatus` field in the `Incident` object serves as a real-time "terminal" for the operator. The Bridge updates this string as it performs background tasks:
+
+- *"Drafting notifications..."*
+- *"Dispatching technicians to Hall B..."*
+- *"Updating mobile app schedule sync..."*
+- *"Confirmed: TechCorp notified of power delay."*
