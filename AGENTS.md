@@ -49,4 +49,11 @@ The Hermes agent is built using a modern, scalable architecture integrated with 
 - **Component Reusability:** Keep agent-specific UI components in `components/agent/`.
 - **Operational Clarity:** Prioritize structured data and clear action paths over chat bubbles.
 - **Type Safety:** Use the serializable data models defined in `lib/hermes.ts`.
-- **Documentation:** Update this file as architectural decisions evolve or new tools are added to Hermes' repertoire.
+- **Core Logic (SOUL):** Refer to `lib/hermes/SOUL.md` for the agent's identity and operational OODA loop.
+- **Operational Skills:** Detailed documentation for specific capabilities can be found in `lib/hermes/skills/`:
+    - [Incident Intelligence](lib/hermes/skills/IncidentIntelligence.md)
+    - [Strategy Orchestrator](lib/hermes/skills/StrategyOrchestrator.md)
+    - [Operational Bridge](lib/hermes/skills/OperationalBridge.md)
+    - [Lifecycle Manager](lib/hermes/skills/LifecycleManager.md)
+    - [Field Intelligence](lib/hermes/skills/FieldIntelligence.md)
+- **Documentation:** Update these files as architectural decisions evolve or new tools are added to Hermes' repertoire.
