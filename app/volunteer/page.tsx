@@ -9,12 +9,16 @@ import {
   Bell,
   CaretRight,
   UserCircle,
+  Calendar,
+  MapPin,
+  WarningOctagon,
 } from "@phosphor-icons/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Task } from "@/types/data-hub";
+import { mockShifts } from "@/lib/mock/volunteer";
 
 import { NotificationFeed } from "@/components/operations/notification-feed";
 import { VolunteerHermesAssistant } from "@/components/agent/volunteer-hermes-assistant";
@@ -23,19 +27,41 @@ const VOLUNTEER_NAME = "Volunteer User";
 
 export default function VolunteerDashboard() {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [sessionsCount, setSessionsCount] = useState(0);
+  const [incidentsCount, setIncidentsCount] = useState(0);
+  const [notificationsCount, setNotificationsCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function fetchData() {
       setIsLoading(true);
       try {
-        // In a real app, we'd get the logged-in user's name from auth
-        const tasksRes = await fetch(`/api/tasks?assignedTo=${encodeURIComponent(VOLUNTEER_NAME)}`);
+        const [tasksRes, sessionsRes, incidentsRes, notificationsRes] = await Promise.all([
+          fetch(`/api/tasks?assignedTo=${encodeURIComponent(VOLUNTEER_NAME)}`),
+          fetch("/api/sessions?limit=1"),
+          fetch("/api/incidents?limit=1"),
+          fetch(`/api/notifications?recipient=${encodeURIComponent(VOLUNTEER_NAME)}`),
+        ]);
 
         const tasksData = await tasksRes.json();
+        const sessionsData = await sessionsRes.json();
+        const incidentsData = await incidentsRes.json();
+        const notificationsData = await notificationsRes.json();
 
         if (tasksData.success) {
           setTasks(tasksData.data);
+        }
+
+        if (sessionsData.success) {
+          setSessionsCount(sessionsData.pagination?.total ?? 0);
+        }
+
+        if (incidentsData.success) {
+          setIncidentsCount(incidentsData.pagination?.total ?? 0);
+        }
+
+        if (notificationsData.success) {
+          setNotificationsCount(notificationsData.pagination?.total ?? 0);
         }
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
@@ -45,6 +71,20 @@ export default function VolunteerDashboard() {
     }
 
     fetchData();
+  }, []);
+
+  const upcomingShift = useMemo(() => {
+    // Find the nearest upcoming or in-progress shift
+    const sorted = [...mockShifts].sort((a, b) => {
+      const aStart = parseInt(a.startTime.split(":")[0]);
+      const bStart = parseInt(b.startTime.split(":")[0]);
+      return aStart - bStart;
+    });
+
+    const inProgress = sorted.find((s) => s.status === "in-progress");
+    if (inProgress) return inProgress;
+
+    return sorted.find((s) => s.status === "upcoming") || null;
   }, []);
 
   const stats = useMemo(() => {
@@ -71,8 +111,8 @@ export default function VolunteerDashboard() {
           <Skeleton className="h-4 w-48" />
         </header>
 
-        <div className="grid gap-4 md:grid-cols-3">
-          {[1, 2, 3].map((i) => (
+        <div className="grid gap-4 md:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
             <Skeleton key={i} className="h-32 rounded-xl" />
           ))}
         </div>
@@ -102,8 +142,8 @@ export default function VolunteerDashboard() {
         <p className="text-slate-500">Welcome back, {VOLUNTEER_NAME}! Here&apos;s your operational overview.</p>
       </header>
 
-      {/* Summary Stats */}
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+      {/* Summary Stats - Updated with 7 cards for full metrics */}
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
         <Card className="bg-blue-50/50 border-blue-100 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-xs font-bold text-blue-900 uppercase tracking-widest">Assigned</CardTitle>
@@ -134,6 +174,69 @@ export default function VolunteerDashboard() {
           <CardContent>
             <div className="text-3xl font-bold text-emerald-900">{stats.completed}</div>
             <p className="text-xs text-emerald-600 mt-1 font-medium">Great job!</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-purple-50/50 border-purple-100 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-xs font-bold text-purple-900 uppercase tracking-widest">Sessions</CardTitle>
+            <Calendar className="h-4 w-4 text-purple-600" weight="bold" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-purple-900">{sessionsCount}</div>
+            <p className="text-xs text-purple-600 mt-1 font-medium">Total scheduled</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-rose-50/50 border-rose-100 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-xs font-bold text-rose-900 uppercase tracking-widest">Incidents</CardTitle>
+            <WarningOctagon className="h-4 w-4 text-rose-600" weight="bold" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-rose-900">{incidentsCount}</div>
+            <p className="text-xs text-rose-600 mt-1 font-medium">Reported</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Second row of stats */}
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+        <Card className="bg-sky-50/50 border-sky-100 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-xs font-bold text-sky-900 uppercase tracking-widest">Notifications</CardTitle>
+            <Bell className="h-4 w-4 text-sky-600" weight="bold" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-sky-900">{notificationsCount}</div>
+            <p className="text-xs text-sky-600 mt-1 font-medium">Unread signals</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-teal-50/50 border-teal-100 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-xs font-bold text-teal-900 uppercase tracking-widest">Upcoming Shift</CardTitle>
+            <Clock className="h-4 w-4 text-teal-600" weight="bold" />
+          </CardHeader>
+          <CardContent>
+            {upcomingShift ? (
+              <>
+                <div className="text-lg font-bold text-teal-900 truncate">{upcomingShift.title}</div>
+                <div className="flex items-center gap-1.5 text-xs text-teal-600 mt-1">
+                  <MapPin size={12} weight="bold" />
+                  <span className="truncate">{upcomingShift.location}</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-teal-600 mt-0.5">
+                  <Clock size={12} weight="bold" />
+                  <span>{upcomingShift.startTime} - {upcomingShift.endTime}</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-lg font-bold text-teal-900">No shifts</div>
+                <p className="text-xs text-teal-600 mt-1 font-medium">No upcoming shifts today</p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
