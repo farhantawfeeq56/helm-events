@@ -15,6 +15,7 @@ import { Impact } from "@/components/operations/incident/impact";
 import { ResponseOptions } from "@/components/operations/incident/response-options";
 import { Risks } from "@/components/operations/incident/risks";
 import { Communications } from "@/components/operations/incident/communications";
+import { IncidentClientLoader } from "./incident-client-loader";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +28,7 @@ export default async function IncidentDetailPage({
   const incident = await getIncidentById(incidentId);
 
   if (!incident) {
-    notFound();
+    return <IncidentClientLoader incidentId={incidentId} />;
   }
 
   const getSeverityColor = (severity: string) => {
@@ -101,7 +102,7 @@ export default async function IncidentDetailPage({
             <Communications communications={incident.communications} />
 
             {/* Timeline Section */}
-            <section>
+            {incident.timeline && incident.timeline.length > 0 && <section>
               <div className="flex items-center gap-3 mb-8">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-white">
                   <Clock size={18} weight="bold" />
@@ -131,7 +132,7 @@ export default async function IncidentDetailPage({
                   </div>
                 ))}
               </div>
-            </section>
+            </section>}
           </div>
 
           {/* Sidebar - Right Column */}

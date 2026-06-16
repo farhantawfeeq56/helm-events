@@ -2,12 +2,83 @@
 
 import { useState } from "react";
 import { Message } from "@/types/agent";
-import { HermesSSEEvent } from "@/lib/hermes";
+import { HermesSSEEvent, RecommendedAction } from "@/lib/hermes";
 
 export function useAgent(role: string = "operations") {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [streamStatus, setStreamStatus] = useState<string>("");
+
+  async function streamFromHermes(
+    message: string,
+    onComplete: (payload: Message) => void
+  ) {
+    const response = await fetch("/api/hermes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, role }),
+    });
+
+    if (!response.ok || !response.body) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        const raw = line.slice(6).trim();
+        if (!raw) continue;
+
+        let event: HermesSSEEvent;
+        try {
+          event = JSON.parse(raw);
+        } catch {
+          continue;
+        }
+
+        if (event.type === "progress") {
+          setStreamStatus(event.content);
+        } else if (event.type === "complete") {
+          const data = event.payload;
+          const msg: Message = {
+            id: (Date.now() + 1).toString(),
+            role: "agent",
+            content: data.content,
+            type: data.type,
+            incidentData: data.type === "operational-card" ? data.incidentData : undefined,
+            checklist: data.type === "execution-checklist" ? data.checklist : undefined,
+            reportData: data.type === "issue-report" ? data.reportData : undefined,
+          };
+
+          // Persist agent-created incidents to localStorage so the detail page can find them
+          if (data.type === "operational-card" && data.incidentData) {
+            try {
+              localStorage.setItem(
+                `hermes:incident:${data.incidentData.id}`,
+                JSON.stringify(data.incidentData)
+              );
+            } catch {
+              // localStorage unavailable (SSR or private mode)
+            }
+          }
+
+          onComplete(msg);
+          break;
+        }
+      }
+    }
+  }
 
   const handleSendMessage = async (text: string) => {
     if (!text.trim()) return;
@@ -24,58 +95,9 @@ export function useAgent(role: string = "operations") {
     setStreamStatus("HERMES ONLINE. INITIALIZING...");
 
     try {
-      const response = await fetch("/api/hermes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text, role }),
+      await streamFromHermes(text, (msg) => {
+        setMessages((prev) => [...prev, msg]);
       });
-
-      if (!response.ok || !response.body) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() ?? "";
-
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          const raw = line.slice(6).trim();
-          if (!raw) continue;
-
-          let event: HermesSSEEvent;
-          try {
-            event = JSON.parse(raw);
-          } catch {
-            continue;
-          }
-
-          if (event.type === "progress") {
-            setStreamStatus(event.content);
-          } else if (event.type === "complete") {
-            const data = event.payload;
-            const agentMessage: Message = {
-              id: (Date.now() + 1).toString(),
-              role: "agent",
-              content: data.content,
-              type: data.type,
-              incidentData: data.type === "operational-card" ? data.incidentData : undefined,
-              checklist: data.type === "execution-checklist" ? data.checklist : undefined,
-              reportData: data.type === "issue-report" ? data.reportData : undefined,
-            };
-            setMessages((prev) => [...prev, agentMessage]);
-            break;
-          }
-        }
-      }
     } catch (error) {
       console.error("Error communicating with Hermes:", error);
       setMessages((prev) => [
@@ -93,9 +115,18 @@ export function useAgent(role: string = "operations") {
     }
   };
 
-  const handleActionDecision = (actionId: number, decision: "approved" | "modified") => {
+  const handleActionDecision = async (actionId: number, decision: "approved" | "modified") => {
     if (decision !== "approved") return;
 
+    // Read the approved action from current message state before any async work
+    const currentMessages = messages;
+    const incidentMsg = [...currentMessages]
+      .reverse()
+      .find((m) => m.type === "operational-card" && m.incidentData);
+    const approvedAction: RecommendedAction | undefined =
+      incidentMsg?.incidentData?.responseOptions?.find((a) => a.id === actionId);
+
+    // 1. Immediately show the checklist in the UI
     setMessages((prev) => {
       const newMessages = [...prev];
       const revIdx = [...newMessages]
@@ -103,31 +134,59 @@ export function useAgent(role: string = "operations") {
         .findIndex((m) => m.type === "operational-card" && m.incidentData);
       const actualIndex = revIdx !== -1 ? newMessages.length - 1 - revIdx : -1;
 
-      let action;
-      if (actualIndex !== -1) {
-        const incidentMessage = newMessages[actualIndex];
-        action = incidentMessage.incidentData?.responseOptions?.find((a) => a.id === actionId);
-        if (action) {
-          newMessages[actualIndex] = {
-            ...incidentMessage,
-            incidentData: {
-              ...incidentMessage.incidentData!,
-              executionStatus: `Executing approved plan: ${action.title}`,
-            },
-          };
-        }
+      if (actualIndex !== -1 && approvedAction) {
+        newMessages[actualIndex] = {
+          ...newMessages[actualIndex],
+          incidentData: {
+            ...newMessages[actualIndex].incidentData!,
+            executionStatus: `Executing: ${approvedAction.title}`,
+          },
+        };
       }
 
-      const confirmation: Message = {
+      const checklist: Message = {
         id: Date.now().toString(),
         role: "agent",
-        content: `EXECUTION COMMENCED: ${action?.title.toUpperCase() ?? "ACTION " + actionId}. STATUS TRACKING ACTIVE.`,
+        content: `EXECUTION COMMENCED: ${approvedAction?.title.toUpperCase() ?? "ACTION " + actionId}. STATUS TRACKING ACTIVE.`,
         type: "execution-checklist",
-        checklist: action?.steps ?? [{ text: "Executing strategy", status: "in-progress" }],
+        checklist: approvedAction?.steps ?? [{ text: "Executing strategy", status: "in-progress" }],
       };
 
-      return [...newMessages, confirmation];
+      return [...newMessages, checklist];
     });
+
+    if (!approvedAction) return;
+
+    // 2. Call Hermes for live execution confirmation and next steps
+    setIsTyping(true);
+    setStreamStatus("DEPLOYING EXECUTION PROTOCOL...");
+
+    try {
+      const executionPrompt = [
+        `EXECUTE APPROVED PLAN: "${approvedAction.title}"`,
+        `Summary: ${approvedAction.summary}`,
+        `Steps: ${approvedAction.steps?.map((s) => s.text).join("; ") ?? "N/A"}`,
+        `Provide execution confirmation, identify any blockers, and specify immediate next actions.`,
+      ].join("\n");
+
+      await streamFromHermes(executionPrompt, (msg) => {
+        setMessages((prev) => [...prev, msg]);
+      });
+    } catch (error) {
+      console.error("Execution call failed:", error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: (Date.now() + 1).toString(),
+          role: "agent",
+          content: "EXECUTION UPDATE UNAVAILABLE. PROCEED WITH MANUAL CHECKLIST.",
+          type: "text",
+        },
+      ]);
+    } finally {
+      setIsTyping(false);
+      setStreamStatus("");
+    }
   };
 
   const handleGlobalDecision = (type: "escalate" | "resolve") => {
