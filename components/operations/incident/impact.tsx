@@ -42,7 +42,7 @@ export function Impact({ affectedResources, impactAnalysis }: ImpactProps) {
       </section>
 
       {/* Affected Resources */}
-      <section>
+      {affectedResources.length > 0 && <section>
         <div className="flex items-center gap-3 mb-6">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-white">
             <Pulse size={18} weight="bold" />
@@ -77,7 +77,7 @@ export function Impact({ affectedResources, impactAnalysis }: ImpactProps) {
             </div>
           ))}
         </div>
-      </section>
+      </section>}
     </div>
   );
 }
