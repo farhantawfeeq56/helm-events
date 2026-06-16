@@ -1,11 +1,116 @@
-import { HermesResponse, mockIncidents, ReportedIssue, Severity, Incident } from "./hermes";
+/**
+ * Hermes Handler
+ *
+ * Core message-processing logic. Framework-agnostic — used by both the
+ * Next.js API route (app/api/hermes/route.ts) and the GCP Cloud Function
+ * (bridge-cf/). Do NOT import Next.js or GCP-specific modules here.
+ *
+ * When HERMES_AGENT_URL is set, requests are forwarded to the Python bridge
+ * API running on the remote server (accessible via SSH tunnel on localhost:3001).
+ * Without it, the mock keyword-matching fallback is used for development.
+ */
+
+import { HermesResponse, HermesSSEEvent, mockIncidents, ReportedIssue, Severity, Incident } from "./hermes";
 import { logActivity } from "./activity-logger";
 
-// Intelligence Utilities for Signal Extraction
+const HERMES_AGENT_URL = process.env.HERMES_AGENT_URL;
+
+// ─── Live agent path (SSE streaming) ────────────────────────────────────────
+
+/**
+ * Streams SSE events from the Hermes bridge API.
+ * Yields progress ticks then a final `complete` event containing HermesResponse.
+ */
+export async function* streamHermesMessage(
+  message: string,
+  role: string = "operations"
+): AsyncGenerator<HermesSSEEvent> {
+  if (!HERMES_AGENT_URL) {
+    // Fall back to mock — yield a single complete event
+    const payload = await processHermesMock(message, role);
+    yield { type: "complete", payload };
+    return;
+  }
+
+  const res = await fetch(`${HERMES_AGENT_URL}/api/chat/stream`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message, role }),
+  });
+
+  if (!res.ok || !res.body) {
+    yield {
+      type: "complete",
+      payload: { type: "text", content: `BRIDGE ERROR: HTTP ${res.status}` },
+    };
+    return;
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+
+    for (const line of lines) {
+      if (!line.startsWith("data: ")) continue;
+      const raw = line.slice(6).trim();
+      if (!raw) continue;
+      try {
+        const event = JSON.parse(raw) as HermesSSEEvent;
+        yield event;
+        if (event.type === "complete") {
+          await logActivity({
+            user: role === "volunteer" ? "Hermes (Volunteer)" : "Hermes",
+            type: "agent",
+            action: "Response Delivered",
+            target: event.payload.type,
+            details: `Message: "${message.substring(0, 60)}${message.length > 60 ? "..." : ""}"`,
+          });
+        }
+      } catch {
+        // malformed SSE line — skip
+      }
+    }
+  }
+}
+
+/**
+ * Non-streaming convenience wrapper. Returns the final HermesResponse.
+ * Used by the GCP Cloud Function path which does not support streaming.
+ */
+export async function processHermesMessage(
+  message: string,
+  role: string = "operations"
+): Promise<HermesResponse> {
+  if (!HERMES_AGENT_URL) {
+    return processHermesMock(message, role);
+  }
+
+  const res = await fetch(`${HERMES_AGENT_URL}/api/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message, role }),
+  });
+
+  if (!res.ok) {
+    return { type: "text", content: `BRIDGE ERROR: HTTP ${res.status}` };
+  }
+
+  return (await res.json()) as HermesResponse;
+}
+
+// ─── Mock fallback (keyword matching, no LLM) ───────────────────────────────
+
 function extractSignals(message: string): string[] {
-  const signals = [];
+  const signals: string[] = [];
   const lower = message.toLowerCase();
-  
   if (lower.includes("leak") || lower.includes("water") || lower.includes("fluid")) signals.push("Fluid Leak");
   if (lower.includes("fire") || lower.includes("smoke") || lower.includes("burning")) signals.push("Fire Hazard");
   if (lower.includes("crowd") || lower.includes("packed") || lower.includes("density")) signals.push("Crowd Density");
@@ -13,7 +118,6 @@ function extractSignals(message: string): string[] {
   if (lower.includes("wifi") || lower.includes("wi-fi") || lower.includes("internet")) signals.push("Connectivity");
   if (lower.includes("medical") || lower.includes("hurt") || lower.includes("sick") || lower.includes("fainted")) signals.push("Medical Emergency");
   if (lower.includes("broken") || lower.includes("damaged")) signals.push("Equipment Damage");
-  
   return signals;
 }
 
@@ -22,12 +126,10 @@ function extractLocation(message: string): string {
   const roomMatch = message.match(/Room\s+[A-Z0-9]+/i);
   const boothMatch = message.match(/Booth\s+[A-Z0-9]+/i);
   const stageMatch = message.match(/Stage\s+[A-Z0-9]+/i);
-  
   if (hallMatch) return hallMatch[0];
   if (roomMatch) return roomMatch[0];
   if (boothMatch) return boothMatch[0];
   if (stageMatch) return stageMatch[0];
-  
   return "Current Location/TBD";
 }
 
@@ -51,69 +153,37 @@ function determineSeverity(message: string): Severity {
 
 function getEscalationGuidance(category: string): string {
   switch (category) {
-    case "Medical":
-      return "Do not move the individual. Stay with them and keep the area clear. Medical team is dispatched.";
-    case "Security":
-      return "Maintain a safe distance. Do not intervene. Observe and report details to security personnel via Radio channel 2.";
-    case "Facility":
-      return "Mark the area if hazardous (e.g., spills). Redirect attendee flow away from the issue.";
-    case "Technical":
-      return "Advise attendees that IT is aware and working on it. Do not attempt to reset venue hardware yourself.";
-    case "Logistics":
-      return "Direct attendees to the nearest alternative service point. Operations lead is coordinating a response.";
-    default:
-      return "Acknowledge the issue to any concerned attendees. Keep operations informed of any changes.";
+    case "Medical": return "Do not move the individual. Stay with them and keep the area clear. Medical team is dispatched.";
+    case "Security": return "Maintain a safe distance. Do not intervene. Observe and report details to security personnel via Radio channel 2.";
+    case "Facility": return "Mark the area if hazardous (e.g., spills). Redirect attendee flow away from the issue.";
+    case "Technical": return "Advise attendees that IT is aware and working on it. Do not attempt to reset venue hardware yourself.";
+    case "Logistics": return "Direct attendees to the nearest alternative service point. Operations lead is coordinating a response.";
+    default: return "Acknowledge the issue to any concerned attendees. Keep operations informed of any changes.";
   }
 }
 
-/**
- * Core logic for processing Hermes messages.
- * This is decoupled from Next.js to be portable for GCP Cloud Functions.
- */
-export async function processHermesMessage(message: string, role: string = "operations"): Promise<HermesResponse> {
+async function processHermesMock(message: string, role: string): Promise<HermesResponse> {
   const lowerText = message.toLowerCase();
 
-  // Volunteer restricted actions
   if (role === "volunteer") {
-    const blockedKeywords = ["reschedule", "reassign", "cancel", "strategy", "recovery"];
-    if (blockedKeywords.some(kw => lowerText.includes(kw))) {
+    const blocked = ["reschedule", "reassign", "cancel", "strategy", "recovery"];
+    if (blocked.some((kw) => lowerText.includes(kw))) {
       return {
         type: "text",
-        content: "ACCESS RESTRICTED: I am unable to perform operational changes like reassignments or schedule updates. Please contact your Operations Lead for assistance with this request.",
+        content: "ACCESS RESTRICTED: I am unable to perform operational changes. Please contact your Operations Lead.",
       };
     }
   }
 
-  // Handle volunteer-specific informational queries
-  if (role === "volunteer") {
-    if (lowerText.includes("medical station")) {
-      return {
-        type: "text",
-        content: "The nearest medical station is located at the East Entrance of Hall B, next to the Information Desk. It is staffed 24/7 during the event.",
-      };
-    }
-    if (lowerText.includes("escalate")) {
-      return {
-        type: "text",
-        content: "I have flagged your request for escalation. An Operations Lead has been notified and will contact you shortly via the Radio channel.",
-      };
-    }
-    if (lowerText.includes("summarize") && lowerText.includes("task")) {
-      return {
-        type: "text",
-        content: "You have 3 active tasks: 1. Monitor Registration Hall B, 2. Distribute lunch vouchers, 3. Assist Speaker at 2 PM. Your next shift change is at 4 PM.",
-      };
-    }
-  }
-
-  // Check for reporting intent
-  const isReporting = lowerText.includes("report") || 
-                      lowerText.includes("issue") || 
-                      lowerText.includes("seeing") || 
-                      lowerText.includes("problem") ||
-                      lowerText.includes("found") ||
-                      (lowerText.includes("there is a") && !lowerText.includes("?")) ||
-                      (lowerText.includes("there's a") && !lowerText.includes("?"));
+  // Volunteer field report
+  const isReporting =
+    lowerText.includes("report") ||
+    lowerText.includes("issue") ||
+    lowerText.includes("seeing") ||
+    lowerText.includes("problem") ||
+    lowerText.includes("found") ||
+    (lowerText.includes("there is a") && !lowerText.includes("?")) ||
+    (lowerText.includes("there's a") && !lowerText.includes("?"));
 
   if (isReporting && role === "volunteer") {
     const category = categorizeIssue(message);
@@ -131,11 +201,11 @@ export async function processHermesMessage(message: string, role: string = "oper
       extractedSignals: signals,
       guidance,
       status: "Reported",
-      timestamp: "Just now"
+      timestamp: "Just now",
     };
 
     await logActivity({
-      user: "Hermes (Volunteer Assistant)",
+      user: "Hermes (Volunteer)",
       type: "agent",
       action: "Issue Categorized",
       target: reportData.id,
@@ -144,41 +214,28 @@ export async function processHermesMessage(message: string, role: string = "oper
 
     return {
       type: "issue-report",
-      content: "I have processed your report and extracted the key operational details. Here is the structured summary and escalation guidance:",
-      reportData
+      content: "I have processed your report and extracted the key operational details.",
+      reportData,
     };
   }
 
-  // Log that Hermes is processing a request
   await logActivity({
-    user: role === "volunteer" ? "Hermes (Volunteer Assistant)" : "Hermes",
+    user: role === "volunteer" ? "Hermes (Volunteer)" : "Hermes",
     type: "agent",
     action: "Processing Query",
     target: "System Intelligence",
     details: `Message: "${message.substring(0, 50)}${message.length > 50 ? "..." : ""}"`,
   });
 
-  // Simulate AI decision logic (currently mocked)
-  // In production, this would call Vertex AI with the HERMES_SYSTEM_PROMPT
-  
-  let incidentData: Incident | null = null;
+  await new Promise((resolve) => setTimeout(resolve, 800));
 
-  if (lowerText.includes("delay")) {
+  // Keyword → incident lookup
+  let incidentData: Incident | null = null;
+  if (lowerText.includes("delay") || lowerText.includes("speaker")) {
     incidentData = mockIncidents.find((i) => i.id === "speaker-delay") || null;
-  } else if (lowerText.includes("sponsor")) {
-    incidentData = mockIncidents.find((i) => i.id === "sponsor-request") || null;
-  } else if (lowerText.includes("volunteer")) {
-    incidentData = mockIncidents.find((i) => i.id === "volunteer-absence") || null;
   } else if (lowerText.includes("internet") || lowerText.includes("wifi") || lowerText.includes("wi-fi")) {
     incidentData = mockIncidents.find((i) => i.id === "internet-outage") || null;
-  } else if (lowerText.includes("conflict")) {
-    incidentData = mockIncidents.find((i) => i.id === "room-conflict") || null;
-  } else if (lowerText.includes("schedule")) {
-    incidentData = mockIncidents.find((i) => i.id === "schedule-update") || null;
   }
-
-  // Simulate a bit of processing delay
-  await new Promise((resolve) => setTimeout(resolve, 800));
 
   if (incidentData) {
     await logActivity({
@@ -189,42 +246,25 @@ export async function processHermesMessage(message: string, role: string = "oper
       details: `Generated response options for: ${incidentData.title}`,
     });
 
-    let responseContent = `ANALYSIS COMPLETE: ${incidentData.title.toUpperCase()}. RESPONSE OPTIONS GENERATED.`;
-    
     if (role === "volunteer") {
-      responseContent = `ANALYSIS COMPLETE: ${incidentData.title.toUpperCase()}. I have retrieved the status and impact details for you.`;
-      // Sanitize data for volunteers
-      const { 
-        responseOptions: _ro, 
-        riskAssessment: _ra, 
-        communications: _c, 
-        ...sanitizedIncident 
-      } = incidentData;
-      
+      // Strip ops-only fields from volunteer view
+      const { id, title, severity, status, timestamp, description, impactAnalysis, executionStatus, iconName, color } = incidentData;
+      const sanitized = { id, title, severity, status, timestamp, description, impactAnalysis, executionStatus, iconName, color } as Incident;
       return {
         type: "operational-card",
-        content: responseContent,
-        incidentData: sanitizedIncident as unknown as Incident,
+        content: `ANALYSIS COMPLETE: ${incidentData.title.toUpperCase()}.`,
+        incidentData: sanitized,
       };
     }
 
     return {
       type: "operational-card",
-      content: responseContent,
-      incidentData: incidentData,
+      content: `ANALYSIS COMPLETE: ${incidentData.title.toUpperCase()}. RESPONSE OPTIONS GENERATED.`,
+      incidentData,
     };
   }
 
-  // Handle a specific case for checklist to demonstrate polymorphism
   if (lowerText.includes("deploy") || lowerText.includes("execute")) {
-    await logActivity({
-      user: "Hermes",
-      type: "agent",
-      action: "Execution Commenced",
-      target: "Operational Protocol",
-      details: "Commencing execution checklist",
-    });
-
     return {
       type: "execution-checklist",
       content: "EXECUTION COMMENCED. TRACKING OPERATIONAL STEPS.",
@@ -236,8 +276,5 @@ export async function processHermesMessage(message: string, role: string = "oper
     };
   }
 
-  return {
-    type: "text",
-    content: "NO MATCHING INCIDENT FOUND. AWAITING COMMAND.",
-  };
+  return { type: "text", content: "NO MATCHING INCIDENT FOUND. AWAITING COMMAND." };
 }

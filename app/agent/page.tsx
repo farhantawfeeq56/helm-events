@@ -25,12 +25,13 @@ export default function AgentPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
-  const { 
-    messages, 
-    isTyping, 
-    handleSendMessage, 
-    handleActionDecision, 
-    handleGlobalDecision 
+  const {
+    messages,
+    isTyping,
+    streamStatus,
+    handleSendMessage,
+    handleActionDecision,
+    handleGlobalDecision
   } = useAgent();
 
   const reportedIncidents = useMemo(() => {
@@ -183,7 +184,7 @@ export default function AgentPage() {
                       onGlobalDecision={handleGlobalDecision}
                     />
                   ))}
-                  {isTyping && <TypingIndicator />}
+                  {isTyping && <TypingIndicator status={streamStatus} />}
                   <div ref={messagesEndRef} />
                 </div>
               )}

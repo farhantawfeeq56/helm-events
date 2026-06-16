@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { Message } from "@/types/agent";
 import { OperationalCard } from "./operational-card";
 import { ExecutionChecklist } from "./execution-checklist";
+import { IssueReportCard } from "./issue-report-card";
 
 interface MessageItemProps {
   message: Message;
@@ -48,6 +49,11 @@ export function MessageItem({ message, onActionDecision, onModifyPlan, onMyOwnPl
           <p className="mb-4 text-slate-700 ml-1 font-medium">{message.content}</p>
           <ExecutionChecklist steps={message.checklist} />
         </div>
+      ) : message.type === "issue-report" && message.reportData ? (
+        <div className="w-full max-w-2xl animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <p className="mb-4 text-slate-700 ml-1 font-medium">{message.content}</p>
+          <IssueReportCard report={message.reportData} />
+        </div>
       ) : (
         <div
           className={cn(
@@ -64,7 +70,7 @@ export function MessageItem({ message, onActionDecision, onModifyPlan, onMyOwnPl
   );
 }
 
-export function TypingIndicator() {
+export function TypingIndicator({ status }: { status?: string }) {
   return (
     <div className="flex flex-col items-start">
       <div className="mb-2 flex items-center gap-2 ml-1">
@@ -73,10 +79,17 @@ export function TypingIndicator() {
         </div>
         <span className="text-xs font-black text-slate-900 uppercase tracking-widest">HERMES.OPS</span>
       </div>
-      <div className="flex gap-1.5 rounded-2xl bg-white border border-slate-200 px-4 py-4 shadow-sm">
-        <div className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-300 [animation-delay:-0.3s]"></div>
-        <div className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-300 [animation-delay:-0.15s]"></div>
-        <div className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-300"></div>
+      <div className="flex items-center gap-3 rounded-2xl bg-white border border-slate-200 px-4 py-3 shadow-sm">
+        <div className="flex gap-1.5">
+          <div className="h-1.5 w-1.5 animate-bounce rounded-full bg-sky-400 [animation-delay:-0.3s]"></div>
+          <div className="h-1.5 w-1.5 animate-bounce rounded-full bg-sky-400 [animation-delay:-0.15s]"></div>
+          <div className="h-1.5 w-1.5 animate-bounce rounded-full bg-sky-400"></div>
+        </div>
+        {status && (
+          <span className="text-[10px] font-black uppercase tracking-widest text-sky-600 animate-pulse">
+            {status}
+          </span>
+        )}
       </div>
     </div>
   );
