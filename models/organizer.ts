@@ -31,9 +31,20 @@ const organizerSchema = new Schema(
       type: String,
       trim: true,
     },
+    // Login credential. Defaults to the shared demo password for every new
+    // profile. `select: false` keeps it out of normal API responses.
+    password: {
+      type: String,
+      default: "Test@123",
+      select: false,
+    },
   },
   {
     timestamps: true,
+    // Never serialize the password, even on the create() response document
+    // (select:false only hides it from queries, not from a freshly created doc).
+    toJSON: { transform: (_doc, ret) => { delete (ret as { password?: string }).password; return ret; } },
+    toObject: { transform: (_doc, ret) => { delete (ret as { password?: string }).password; return ret; } },
   },
 );
 
