@@ -52,20 +52,27 @@ function tryParseHermesJSON(raw: string): HermesResponse | null {
 }
 
 /**
- * Prepends live event data (from MongoDB, via contextService) to the operator's
- * message so the agent reasons over the real schedule, sessions, and open
- * incidents. This is descriptive DATA, not instructions, so it does not trigger
- * the agent's prompt-injection defenses. The output-format contract stays in the
- * agent's trusted AGENTS.md — never appended here.
+ * Attaches live event data (from MongoDB, via contextService) to the operator's
+ * message so the agent can reason over the real schedule and open incidents.
+ *
+ * The operator request is kept FIRST and primary; the event data follows as
+ * clearly-subordinate background reference. (Leading with a large context blob
+ * caused the agent to fixate on it and ignore the actual request — e.g. a fire
+ * alarm came back as a generic "readiness status".)
+ *
+ * This is descriptive DATA, not instructions, so it does not trip the agent's
+ * prompt-injection defenses. The output-format contract stays in the agent's
+ * trusted AGENTS.md — never appended here.
  */
 function buildContextualMessage(message: string, context?: string | null): string {
   if (!context) return message;
   return [
-    "[LIVE EVENT CONTEXT — current data from the operations database]",
-    context,
-    "",
-    "[OPERATOR REQUEST]",
     message,
+    "",
+    "---",
+    "[BACKGROUND — live data for the current event, for reference only.",
+    "Respond to the operator request above; use this data only where relevant.]",
+    context,
   ].join("\n");
 }
 
