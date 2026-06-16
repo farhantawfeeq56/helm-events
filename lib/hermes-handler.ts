@@ -51,15 +51,36 @@ function tryParseHermesJSON(raw: string): HermesResponse | null {
   return null;
 }
 
+/**
+ * Prepends live event data (from MongoDB, via contextService) to the operator's
+ * message so the agent reasons over the real schedule, sessions, and open
+ * incidents. This is descriptive DATA, not instructions, so it does not trigger
+ * the agent's prompt-injection defenses. The output-format contract stays in the
+ * agent's trusted AGENTS.md — never appended here.
+ */
+function buildContextualMessage(message: string, context?: string | null): string {
+  if (!context) return message;
+  return [
+    "[LIVE EVENT CONTEXT — current data from the operations database]",
+    context,
+    "",
+    "[OPERATOR REQUEST]",
+    message,
+  ].join("\n");
+}
+
 // ─── Live agent path (SSE streaming) ────────────────────────────────────────
 
 /**
  * Streams SSE events from the Hermes bridge API.
  * Yields progress ticks then a final `complete` event containing HermesResponse.
+ *
+ * @param context Optional formatted event data injected ahead of the message.
  */
 export async function* streamHermesMessage(
   message: string,
-  role: string = "operations"
+  role: string = "operations",
+  context?: string | null
 ): AsyncGenerator<HermesSSEEvent> {
   if (!HERMES_AGENT_URL) {
     // Fall back to mock — yield a single complete event
@@ -71,7 +92,7 @@ export async function* streamHermesMessage(
   const res = await fetch(`${HERMES_AGENT_URL}/api/chat/stream`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, role }),
+    body: JSON.stringify({ message: buildContextualMessage(message, context), role }),
   });
 
   if (!res.ok || !res.body) {
@@ -135,7 +156,8 @@ export async function* streamHermesMessage(
  */
 export async function processHermesMessage(
   message: string,
-  role: string = "operations"
+  role: string = "operations",
+  context?: string | null
 ): Promise<HermesResponse> {
   if (!HERMES_AGENT_URL) {
     return processHermesMock(message, role);
@@ -144,7 +166,7 @@ export async function processHermesMessage(
   const res = await fetch(`${HERMES_AGENT_URL}/api/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, role }),
+    body: JSON.stringify({ message: buildContextualMessage(message, context), role }),
   });
 
   if (!res.ok) {
