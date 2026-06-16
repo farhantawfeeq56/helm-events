@@ -15,26 +15,17 @@ import { logActivity } from "./activity-logger";
 
 const HERMES_AGENT_URL = process.env.HERMES_AGENT_URL?.replace(/\/$/, "");
 
-// Appended to every message sent to the live agent.
-// Instructs it to respond with structured JSON that maps directly to HermesResponse.
-const STRUCTURED_OUTPUT_PROMPT = `
-
-[HERMES OUTPUT FORMAT - MANDATORY]
-Respond ONLY with a single valid JSON object. No prose, no markdown, no text outside the JSON.
-
-If this is an incident/problem needing analysis:
-{"type":"operational-card","content":"<one-line status>","incidentData":{"id":"<kebab-slug>","title":"<title>","severity":"Critical|High|Medium|Low","status":"Investigating|In Progress|Resolved","timestamp":"Just now","description":"<full description>","impactAnalysis":["<item>","<item>"],"responseOptions":[{"id":1,"title":"<option>","summary":"<summary>","pros":["<pro>"],"cons":["<con>"],"operationalConsiderations":"<note>","status":"pending","priority":"high|medium|low","steps":[{"text":"<step>","status":"pending"}]}],"riskAssessment":{"level":"High","explanation":"<why>","mitigationStrategy":"<how>"},"communications":[{"id":1,"channel":"Push|SMS|Email|Radio","audience":"<who>","message":"<text>","status":"draft"}],"executionStatus":"Awaiting Response","iconName":"warning","color":"red"}}
-
-If this is an execution confirmation/action plan:
-{"type":"execution-checklist","content":"<status summary>","checklist":[{"text":"<step>","status":"pending|in-progress|completed"}]}
-
-For all other responses:
-{"type":"text","content":"<your response>"}
-[END FORMAT]`;
-
 /**
- * Tries to extract and parse a valid HermesResponse JSON from the live agent's raw text output.
- * Handles JSON wrapped in markdown code fences and leading/trailing prose.
+ * Safety net: tries to extract a valid HermesResponse JSON from a raw text payload.
+ *
+ * The Hermes bridge already parses the agent's JSON into a structured payload —
+ * the output contract lives in the agent's trusted AGENTS.md on the server. This
+ * only runs as a fallback if a `text`-typed payload still contains JSON (e.g. the
+ * agent wrapped it in a code fence). It never alters a legitimate plain-text reply.
+ *
+ * IMPORTANT: do NOT append formatting instructions to the user message. Doing so
+ * makes the agent treat the user input as a prompt-injection attempt and refuse.
+ * Output formatting is owned server-side via the agent's AGENTS.md.
  */
 function tryParseHermesJSON(raw: string): HermesResponse | null {
   let cleaned = raw.trim();
@@ -80,7 +71,7 @@ export async function* streamHermesMessage(
   const res = await fetch(`${HERMES_AGENT_URL}/api/chat/stream`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message: message + STRUCTURED_OUTPUT_PROMPT, role }),
+    body: JSON.stringify({ message, role }),
   });
 
   if (!res.ok || !res.body) {

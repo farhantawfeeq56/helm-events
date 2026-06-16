@@ -9,6 +9,7 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { AgentIncidents } from "./agent-incidents";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +48,8 @@ export default async function IncidentsPage() {
             </p>
           </div>
         </header>
+
+        <AgentIncidents />
 
         <div className="grid gap-4">
           {incidents.map((incident) => (
