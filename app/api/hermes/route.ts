@@ -1,5 +1,7 @@
 import { NextRequest } from "next/server";
 import { streamHermesMessage } from "@/lib/hermes-handler";
+import { getActiveEventContext } from "@/lib/context/contextService";
+import { persistHermesIncident } from "@/lib/repositories/incident-repository";
 
 /**
  * Hermes API — SSE streaming endpoint
@@ -8,6 +10,10 @@ import { streamHermesMessage } from "@/lib/hermes-handler";
  * to the frontend. The client reads `data:` lines:
  *   { type: "progress", content: "..." }  — shown as a status ticker
  *   { type: "complete", payload: HermesResponse }  — final structured response
+ *
+ * On the way in, real event data from MongoDB is injected as context so the
+ * agent reasons over the live schedule. On the way out, any incident the agent
+ * produces is persisted to MongoDB so it appears in the incidents dashboard.
  */
 export async function POST(req: NextRequest) {
   const { message, role } = await req.json();
@@ -20,13 +26,20 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  // Pull live event context (best-effort — null if no event / DB unavailable).
+  const context = await getActiveEventContext();
+
   const stream = new ReadableStream({
     async start(controller) {
       const encode = (data: object) =>
         new TextEncoder().encode(`data: ${JSON.stringify(data)}\n\n`);
 
       try {
-        for await (const event of streamHermesMessage(message, role ?? "operations")) {
+        for await (const event of streamHermesMessage(message, role ?? "operations", context)) {
+          // Persist agent-created incidents so they surface in the dashboard.
+          if (event.type === "complete" && event.payload.type === "operational-card") {
+            await persistHermesIncident(event.payload.incidentData);
+          }
           controller.enqueue(encode(event));
           if (event.type === "complete") break;
         }

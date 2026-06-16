@@ -5,6 +5,10 @@ import { Session } from "@/models/session";
 import { Volunteer } from "@/models/volunteer";
 import { Activity } from "@/models/activity";
 
+// Live dashboard: reads counts from MongoDB on each request. Must not be
+// statically prerendered at build time (the DB may be unreachable then).
+export const dynamic = "force-dynamic";
+
 export default async function DashboardPage() {
   await connectToDatabase();
 

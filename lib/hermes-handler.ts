@@ -51,15 +51,43 @@ function tryParseHermesJSON(raw: string): HermesResponse | null {
   return null;
 }
 
+/**
+ * Attaches live event data (from MongoDB, via contextService) to the operator's
+ * message so the agent can reason over the real schedule and open incidents.
+ *
+ * The operator request is kept FIRST and primary; the event data follows as
+ * clearly-subordinate background reference. (Leading with a large context blob
+ * caused the agent to fixate on it and ignore the actual request — e.g. a fire
+ * alarm came back as a generic "readiness status".)
+ *
+ * This is descriptive DATA, not instructions, so it does not trip the agent's
+ * prompt-injection defenses. The output-format contract stays in the agent's
+ * trusted AGENTS.md — never appended here.
+ */
+function buildContextualMessage(message: string, context?: string | null): string {
+  if (!context) return message;
+  return [
+    message,
+    "",
+    "---",
+    "[BACKGROUND — live data for the current event, for reference only.",
+    "Respond to the operator request above; use this data only where relevant.]",
+    context,
+  ].join("\n");
+}
+
 // ─── Live agent path (SSE streaming) ────────────────────────────────────────
 
 /**
  * Streams SSE events from the Hermes bridge API.
  * Yields progress ticks then a final `complete` event containing HermesResponse.
+ *
+ * @param context Optional formatted event data injected ahead of the message.
  */
 export async function* streamHermesMessage(
   message: string,
-  role: string = "operations"
+  role: string = "operations",
+  context?: string | null
 ): AsyncGenerator<HermesSSEEvent> {
   if (!HERMES_AGENT_URL) {
     // Fall back to mock — yield a single complete event
@@ -71,7 +99,7 @@ export async function* streamHermesMessage(
   const res = await fetch(`${HERMES_AGENT_URL}/api/chat/stream`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, role }),
+    body: JSON.stringify({ message: buildContextualMessage(message, context), role }),
   });
 
   if (!res.ok || !res.body) {
@@ -135,7 +163,8 @@ export async function* streamHermesMessage(
  */
 export async function processHermesMessage(
   message: string,
-  role: string = "operations"
+  role: string = "operations",
+  context?: string | null
 ): Promise<HermesResponse> {
   if (!HERMES_AGENT_URL) {
     return processHermesMock(message, role);
@@ -144,7 +173,7 @@ export async function processHermesMessage(
   const res = await fetch(`${HERMES_AGENT_URL}/api/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, role }),
+    body: JSON.stringify({ message: buildContextualMessage(message, context), role }),
   });
 
   if (!res.ok) {

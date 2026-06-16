@@ -1,5 +1,9 @@
+import { Types } from "mongoose";
 import { Incident } from "@/types/incident";
-import { mockIncidents as hermesMockIncidents } from "@/lib/hermes";
+import { mockIncidents as hermesMockIncidents, type Incident as HermesIncident } from "@/lib/hermes";
+import { connectToDatabase } from "@/lib/db";
+import { Incident as IncidentModel } from "@/models/incident";
+import { getActiveEvent } from "@/lib/context/contextService";
 
 /**
  * INCIDENT REPOSITORY
@@ -186,25 +190,169 @@ if (internetOutageIncident) {
   ];
 }
 
+// ─── MongoDB ⇆ UI mapping ───────────────────────────────────────────────────
+
+const SEVERITY_LABELS: Record<string, Incident["severity"]> = {
+  critical: "Critical",
+  high: "High",
+  medium: "Medium",
+  low: "Low",
+};
+
+function toSeverityLabel(raw: string | undefined): Incident["severity"] {
+  if (!raw) return "Medium";
+  return SEVERITY_LABELS[raw.toLowerCase()] ?? (raw as Incident["severity"]);
+}
+
+function severityColor(raw: string | undefined): string {
+  switch ((raw ?? "").toLowerCase()) {
+    case "critical": return "red";
+    case "high": return "orange";
+    case "medium": return "amber";
+    default: return "blue";
+  }
+}
+
+function formatTimestamp(value: unknown): string {
+  if (!value) return "Just now";
+  const d = new Date(value as string);
+  if (Number.isNaN(d.getTime())) return String(value);
+  return d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+}
+
+/** A persisted incident document shape (lean), loosely typed. */
+type IncidentDoc = {
+  _id: unknown;
+  eventId?: unknown;
+  type?: string;
+  title?: string;
+  slug?: string;
+  severity?: string;
+  description?: string;
+  status?: string;
+  reportedAt?: unknown;
+  createdAt?: unknown;
+  source?: string;
+  analysis?: HermesIncident;
+};
+
+/**
+ * Maps a MongoDB incident document to the rich UI `Incident` type.
+ * Hermes-sourced incidents carry a full `analysis` payload; manually-created
+ * ones are expanded with sensible defaults so every incident renders.
+ */
+function mapDocToIncident(doc: IncidentDoc): Incident {
+  const eventId = doc.eventId ? String(doc.eventId) : "live-session";
+
+  if (doc.analysis && typeof doc.analysis === "object") {
+    const a = doc.analysis;
+    return {
+      ...a,
+      id: doc.slug || a.id || String(doc._id),
+      situation: a.description ?? doc.description ?? "",
+      affectedResources: [],
+      timeline: [],
+      risks: [],
+      eventId,
+    };
+  }
+
+  return {
+    id: doc.slug || String(doc._id),
+    title: doc.title || doc.type || "Incident",
+    severity: toSeverityLabel(doc.severity),
+    status: doc.status || "open",
+    timestamp: formatTimestamp(doc.reportedAt || doc.createdAt),
+    description: doc.description || "",
+    situation: doc.description || "",
+    impactAnalysis: [],
+    affectedResources: [],
+    timeline: [],
+    risks: [],
+    executionStatus: "Logged in the operations system.",
+    iconName: "Warning",
+    color: severityColor(doc.severity),
+    eventId,
+  };
+}
+
+// ─── Reads (DB-first, mock fallback) ────────────────────────────────────────
+
 export async function getAllIncidents(): Promise<Incident[]> {
+  try {
+    await connectToDatabase();
+    const docs = (await IncidentModel.find().sort({ createdAt: -1 }).lean()) as IncidentDoc[];
+    if (docs.length > 0) return docs.map(mapDocToIncident);
+  } catch (error) {
+    console.error("getAllIncidents: DB unavailable, falling back to mock.", error);
+  }
   return MOCK_INCIDENTS;
 }
 
 /**
- * Fetches a single incident by its ID.
- * 
- * INTEGRATION POINT:
- * This will eventually fetch from Firestore and use the `bridge-cf` 
- * to check if real-time AI analysis is currently pending.
+ * Fetches a single incident by its URL id — the Hermes slug (kebab-case) or a
+ * Mongo ObjectId — then falls back to the in-memory mock set.
  */
 export async function getIncidentById(id: string): Promise<Incident | undefined> {
+  try {
+    await connectToDatabase();
+    let doc = (await IncidentModel.findOne({ slug: id }).lean()) as IncidentDoc | null;
+    if (!doc && Types.ObjectId.isValid(id)) {
+      doc = (await IncidentModel.findById(id).lean()) as IncidentDoc | null;
+    }
+    if (doc) return mapDocToIncident(doc);
+  } catch (error) {
+    console.error("getIncidentById: DB error, falling back to mock.", error);
+  }
   return MOCK_INCIDENTS.find((incident) => incident.id === id);
 }
 
 export async function getIncidentsByStatus(status: string): Promise<Incident[]> {
-  return MOCK_INCIDENTS.filter((incident) => incident.status.toLowerCase() === status.toLowerCase());
+  const all = await getAllIncidents();
+  return all.filter((incident) => incident.status.toLowerCase() === status.toLowerCase());
 }
 
 export async function getIncidentsByEventId(eventId: string): Promise<Incident[]> {
-  return MOCK_INCIDENTS.filter((incident) => incident.eventId === eventId);
+  const all = await getAllIncidents();
+  return all.filter((incident) => incident.eventId === eventId);
+}
+
+// ─── Writes (Hermes → MongoDB) ──────────────────────────────────────────────
+
+/**
+ * Persists an incident produced by the Hermes agent. Idempotent on the agent's
+ * slug id — re-running an analysis updates the stored record rather than
+ * duplicating it. Attaches the active event when one exists. Never throws: a
+ * persistence failure must not break the chat stream (the incident still lives
+ * in client state/localStorage as a fallback).
+ */
+export async function persistHermesIncident(data: HermesIncident): Promise<void> {
+  try {
+    await connectToDatabase();
+
+    const activeEvent = await getActiveEvent().catch(() => null);
+    const eventId = activeEvent?._id ? String(activeEvent._id) : undefined;
+
+    const core = {
+      eventId,
+      type: data.title,
+      title: data.title,
+      severity: data.severity.toLowerCase(),
+      description: data.description,
+      status: (data.status || "open").toLowerCase(),
+      source: "hermes" as const,
+      analysis: data,
+    };
+
+    const existing = await IncidentModel.findOne({ slug: data.id });
+    if (existing) {
+      Object.assign(existing, core);
+      await existing.save();
+      return;
+    }
+
+    await IncidentModel.create({ ...core, slug: data.id, reportedAt: new Date() });
+  } catch (error) {
+    console.error("persistHermesIncident failed:", error);
+  }
 }

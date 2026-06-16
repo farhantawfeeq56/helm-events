@@ -83,7 +83,7 @@ export async function getIncidentContext(incidentId: string): Promise<string> {
 
 /**
  * Aggregates and formats context for an event, including its sessions and incidents.
- * 
+ *
  * @param eventId The ID of the event
  * @returns Formatted string context
  */
@@ -101,4 +101,30 @@ export async function getEventContext(eventId: string): Promise<string> {
   };
 
   return formatContext(data, "Event");
+}
+
+/**
+ * Returns the currently-active event (the most recently created one).
+ * The app treats the latest event as the live event being operated.
+ */
+export async function getActiveEvent(): Promise<Event | null> {
+  await connectToDatabase();
+  return EventModel.findOne().sort({ createdAt: -1 }).lean() as Promise<Event | null>;
+}
+
+/**
+ * Formatted context string for the active event — fed to Hermes so the agent
+ * reasons over the real schedule, sessions, and open incidents instead of
+ * operating blind. Returns null (not an error) if there is no event or the DB
+ * is unreachable, so the Hermes flow degrades gracefully to "no context".
+ */
+export async function getActiveEventContext(): Promise<string | null> {
+  try {
+    const event = await getActiveEvent();
+    if (!event?._id) return null;
+    return await getEventContext(String(event._id));
+  } catch (error) {
+    console.error("getActiveEventContext failed:", error);
+    return null;
+  }
 }

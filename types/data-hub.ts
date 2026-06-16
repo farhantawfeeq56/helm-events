@@ -1,3 +1,5 @@
+import type { Incident as HermesIncident } from "@/lib/hermes";
+
 export type SpeakerStatus = "Confirmed" | "Pending" | "Withdrawn";
 export type VolunteerStatus = "Active" | "Pending" | "Inactive";
 export type SponsorTier = "Platinum" | "Gold" | "Silver" | "Bronze";
@@ -130,7 +132,7 @@ export interface AnalyticsMetric {
 
 export interface Incident {
   _id: string;
-  eventId: string | Event;
+  eventId?: string | Event;
   type: string;
   severity: "low" | "medium" | "high" | "critical";
   description: string;
@@ -138,6 +140,11 @@ export interface Incident {
   reportedAt: string;
   createdAt: string;
   updatedAt: string;
+  // Hermes enrichment (present when source === "hermes")
+  title?: string;
+  slug?: string;
+  source?: "manual" | "hermes";
+  analysis?: HermesIncident;
 }
 
 export interface Task {
