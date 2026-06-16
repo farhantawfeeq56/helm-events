@@ -15,6 +15,51 @@ import { logActivity } from "./activity-logger";
 
 const HERMES_AGENT_URL = process.env.HERMES_AGENT_URL?.replace(/\/$/, "");
 
+// Appended to every message sent to the live agent.
+// Instructs it to respond with structured JSON that maps directly to HermesResponse.
+const STRUCTURED_OUTPUT_PROMPT = `
+
+[HERMES OUTPUT FORMAT - MANDATORY]
+Respond ONLY with a single valid JSON object. No prose, no markdown, no text outside the JSON.
+
+If this is an incident/problem needing analysis:
+{"type":"operational-card","content":"<one-line status>","incidentData":{"id":"<kebab-slug>","title":"<title>","severity":"Critical|High|Medium|Low","status":"Investigating|In Progress|Resolved","timestamp":"Just now","description":"<full description>","impactAnalysis":["<item>","<item>"],"responseOptions":[{"id":1,"title":"<option>","summary":"<summary>","pros":["<pro>"],"cons":["<con>"],"operationalConsiderations":"<note>","status":"pending","priority":"high|medium|low","steps":[{"text":"<step>","status":"pending"}]}],"riskAssessment":{"level":"High","explanation":"<why>","mitigationStrategy":"<how>"},"communications":[{"id":1,"channel":"Push|SMS|Email|Radio","audience":"<who>","message":"<text>","status":"draft"}],"executionStatus":"Awaiting Response","iconName":"warning","color":"red"}}
+
+If this is an execution confirmation/action plan:
+{"type":"execution-checklist","content":"<status summary>","checklist":[{"text":"<step>","status":"pending|in-progress|completed"}]}
+
+For all other responses:
+{"type":"text","content":"<your response>"}
+[END FORMAT]`;
+
+/**
+ * Tries to extract and parse a valid HermesResponse JSON from the live agent's raw text output.
+ * Handles JSON wrapped in markdown code fences and leading/trailing prose.
+ */
+function tryParseHermesJSON(raw: string): HermesResponse | null {
+  let cleaned = raw.trim();
+
+  // Strip markdown code fences: ```json ... ``` or ``` ... ```
+  const fence = cleaned.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+  if (fence) cleaned = fence[1].trim();
+
+  // Find the outermost JSON object
+  const start = cleaned.indexOf("{");
+  const end = cleaned.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) return null;
+
+  try {
+    const parsed = JSON.parse(cleaned.slice(start, end + 1));
+    const validTypes = ["operational-card", "execution-checklist", "issue-report", "text"];
+    if (typeof parsed.type === "string" && validTypes.includes(parsed.type) && typeof parsed.content === "string") {
+      return parsed as HermesResponse;
+    }
+  } catch {
+    // not valid JSON
+  }
+  return null;
+}
+
 // ─── Live agent path (SSE streaming) ────────────────────────────────────────
 
 /**
@@ -35,7 +80,7 @@ export async function* streamHermesMessage(
   const res = await fetch(`${HERMES_AGENT_URL}/api/chat/stream`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, role }),
+    body: JSON.stringify({ message: message + STRUCTURED_OUTPUT_PROMPT, role }),
   });
 
   if (!res.ok || !res.body) {
@@ -64,16 +109,28 @@ export async function* streamHermesMessage(
       if (!raw) continue;
       try {
         const event = JSON.parse(raw) as HermesSSEEvent;
-        yield event;
+
         if (event.type === "complete") {
+          // If the live agent returned plain text, try to extract structured JSON from it
+          let payload = event.payload;
+          if (payload.type === "text") {
+            const structured = tryParseHermesJSON(payload.content);
+            if (structured) payload = structured;
+          }
+
           await logActivity({
             user: role === "volunteer" ? "Hermes (Volunteer)" : "Hermes",
             type: "agent",
             action: "Response Delivered",
-            target: event.payload.type,
+            target: payload.type,
             details: `Message: "${message.substring(0, 60)}${message.length > 60 ? "..." : ""}"`,
           });
+
+          yield { type: "complete", payload };
+          return;
         }
+
+        yield event;
       } catch {
         // malformed SSE line — skip
       }
