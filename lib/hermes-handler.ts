@@ -13,7 +13,7 @@
 import { HermesResponse, HermesSSEEvent, mockIncidents, ReportedIssue, Severity, Incident } from "./hermes";
 import { logActivity } from "./activity-logger";
 
-const HERMES_AGENT_URL = process.env.HERMES_AGENT_URL;
+const HERMES_AGENT_URL = process.env.HERMES_AGENT_URL?.replace(/\/$/, "");
 
 // ─── Live agent path (SSE streaming) ────────────────────────────────────────
 
