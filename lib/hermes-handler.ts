@@ -10,7 +10,7 @@
  * Without it, the mock keyword-matching fallback is used for development.
  */
 
-import { HermesResponse, HermesSSEEvent, mockIncidents, ReportedIssue, Severity, Incident } from "./hermes";
+import { HermesResponse, HermesSSEEvent, mockIncidents, ReportedIssue, Severity, Incident, sanitizeAgentText } from "./hermes";
 import { logActivity } from "./activity-logger";
 
 const HERMES_AGENT_URL = process.env.HERMES_AGENT_URL?.replace(/\/$/, "");
@@ -41,8 +41,13 @@ function tryParseHermesJSON(raw: string): HermesResponse | null {
 
   try {
     const parsed = JSON.parse(cleaned.slice(start, end + 1));
-    const validTypes = ["operational-card", "execution-checklist", "issue-report", "text"];
+    const validTypes = ["operational-card", "execution-checklist", "issue-report", "clarification", "text"];
     if (typeof parsed.type === "string" && validTypes.includes(parsed.type) && typeof parsed.content === "string") {
+      // A clarification must carry a questions array; coerce a missing one so a
+      // well-typed payload still renders rather than falling back to raw text.
+      if (parsed.type === "clarification" && !Array.isArray(parsed.questions)) {
+        parsed.questions = [];
+      }
       return parsed as HermesResponse;
     }
   } catch {
@@ -130,11 +135,13 @@ export async function* streamHermesMessage(
         const event = JSON.parse(raw) as HermesSSEEvent;
 
         if (event.type === "complete") {
-          // If the live agent returned plain text, try to extract structured JSON from it
+          // If the live agent returned plain text, try to extract structured JSON
+          // from it. If it isn't our contract, sanitize so a stray ```json fence
+          // or bare JSON object is never shown to the operator as raw text.
           let payload = event.payload;
           if (payload.type === "text") {
             const structured = tryParseHermesJSON(payload.content);
-            if (structured) payload = structured;
+            payload = structured ?? { type: "text", content: sanitizeAgentText(payload.content) };
           }
 
           await logActivity({
@@ -180,7 +187,11 @@ export async function processHermesMessage(
     return { type: "text", content: `BRIDGE ERROR: HTTP ${res.status}` };
   }
 
-  return (await res.json()) as HermesResponse;
+  const payload = (await res.json()) as HermesResponse;
+  if (payload.type === "text") {
+    return tryParseHermesJSON(payload.content) ?? { type: "text", content: sanitizeAgentText(payload.content) };
+  }
+  return payload;
 }
 
 // ─── Mock fallback (keyword matching, no LLM) ───────────────────────────────

@@ -48,6 +48,9 @@ const organizerSchema = new Schema(
   },
 );
 
+// No two organizers can share an email within the same event.
+organizerSchema.index({ eventId: 1, email: 1 }, { unique: true });
+
 export type OrganizerDocument = InferSchemaType<typeof organizerSchema>;
 
 export const Organizer = models.Organizer || model("Organizer", organizerSchema);

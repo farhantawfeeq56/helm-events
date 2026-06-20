@@ -149,6 +149,28 @@ export const getFields = (collectionName: string): any[] => {
         { name: "expectedOutcome", label: "Expected Outcome", type: "textarea" },
         { name: "description", label: "Description", type: "textarea" },
       ];
+    case "shifts":
+      return [
+        { name: "title", label: "Title", type: "text" },
+        { name: "role", label: "Role / Function", type: "text" },
+        { name: "assignedTo", label: "Assigned Volunteer", type: "text" },
+        { name: "location", label: "Location", type: "text" },
+        { name: "date", label: "Date", type: "text", placeholder: "YYYY-MM-DD" },
+        { name: "startTime", label: "Start Time", type: "text", placeholder: "HH:MM" },
+        { name: "endTime", label: "End Time", type: "text", placeholder: "HH:MM" },
+        {
+          name: "status",
+          label: "Status",
+          type: "select",
+          options: [
+            { label: "Scheduled", value: "scheduled" },
+            { label: "In Progress", value: "in-progress" },
+            { label: "Completed", value: "completed" },
+            { label: "Cancelled", value: "cancelled" },
+          ],
+        },
+        { name: "description", label: "Description", type: "textarea" },
+      ];
     case "incidents":
       return [
         { name: "description", label: "Description", type: "text" },
@@ -290,6 +312,7 @@ export const getSearchKey = (collectionName: string): string => {
     case "sessions":
       return "title";
     case "tasks":
+    case "shifts":
       return "title";
     case "incidents":
       return "description";

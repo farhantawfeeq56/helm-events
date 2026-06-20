@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import {
   ClipboardText,
   Clock,
@@ -18,38 +19,58 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Task } from "@/types/data-hub";
-import { mockShifts } from "@/lib/mock/volunteer";
+import { useAuth } from "@/lib/context/auth-context";
+import { getShiftDisplayStatus } from "@/lib/shifts";
 
 import { NotificationFeed } from "@/components/operations/notification-feed";
 import { VolunteerHermesAssistant } from "@/components/agent/volunteer-hermes-assistant";
 
-const VOLUNTEER_NAME = "Volunteer User";
+interface DashboardShift {
+  _id: string;
+  title: string;
+  location?: string;
+  date?: string;
+  startTime?: string;
+  endTime?: string;
+  status?: string;
+}
 
 export default function VolunteerDashboard() {
+  const user = useAuth();
+  const volunteerName = user?.name || "Volunteer";
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [shifts, setShifts] = useState<DashboardShift[]>([]);
   const [sessionsCount, setSessionsCount] = useState(0);
   const [incidentsCount, setIncidentsCount] = useState(0);
   const [notificationsCount, setNotificationsCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    if (!user?.name) return;
+    const name = user.name;
     async function fetchData() {
       setIsLoading(true);
       try {
-        const [tasksRes, sessionsRes, incidentsRes, notificationsRes] = await Promise.all([
-          fetch(`/api/tasks?assignedTo=${encodeURIComponent(VOLUNTEER_NAME)}`),
+        const [tasksRes, shiftsRes, sessionsRes, incidentsRes, notificationsRes] = await Promise.all([
+          fetch(`/api/tasks?assignedTo=${encodeURIComponent(name)}`),
+          fetch(`/api/shifts?assignedTo=${encodeURIComponent(name)}&limit=100`),
           fetch("/api/sessions?limit=1"),
           fetch("/api/incidents?limit=1"),
-          fetch(`/api/notifications?recipient=${encodeURIComponent(VOLUNTEER_NAME)}`),
+          fetch(`/api/notifications?recipient=${encodeURIComponent(name)}`),
         ]);
 
         const tasksData = await tasksRes.json();
+        const shiftsData = await shiftsRes.json();
         const sessionsData = await sessionsRes.json();
         const incidentsData = await incidentsRes.json();
         const notificationsData = await notificationsRes.json();
 
         if (tasksData.success) {
           setTasks(tasksData.data);
+        }
+
+        if (shiftsData.success) {
+          setShifts(shiftsData.data);
         }
 
         if (sessionsData.success) {
@@ -71,21 +92,23 @@ export default function VolunteerDashboard() {
     }
 
     fetchData();
-  }, []);
+  }, [user?.name]);
 
   const upcomingShift = useMemo(() => {
-    // Find the nearest upcoming or in-progress shift
-    const sorted = [...mockShifts].sort((a, b) => {
-      const aStart = parseInt(a.startTime.split(":")[0]);
-      const bStart = parseInt(b.startTime.split(":")[0]);
-      return aStart - bStart;
-    });
+    // Prefer a shift in progress now; otherwise the nearest upcoming one — all
+    // derived from the real time window, not stored flags.
+    const live = shifts
+      .map((s) => ({ shift: s, display: getShiftDisplayStatus(s) }))
+      .filter((s) => s.display !== "completed" && s.display !== "cancelled");
 
-    const inProgress = sorted.find((s) => s.status === "in-progress");
-    if (inProgress) return inProgress;
+    const inProgress = live.find((s) => s.display === "in-progress");
+    if (inProgress) return inProgress.shift;
 
-    return sorted.find((s) => s.status === "upcoming") || null;
-  }, []);
+    const upcoming = live
+      .filter((s) => s.display === "upcoming")
+      .sort((a, b) => (a.shift.startTime || "").localeCompare(b.shift.startTime || ""));
+    return upcoming[0]?.shift || null;
+  }, [shifts]);
 
   const stats = useMemo(() => {
     return {
@@ -139,11 +162,11 @@ export default function VolunteerDashboard() {
     <div className="p-4 md:p-6 space-y-6 md:space-y-8 max-w-7xl mx-auto">
       <header className="flex flex-col gap-1">
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Volunteer Dashboard</h1>
-        <p className="text-slate-500">Welcome back, {VOLUNTEER_NAME}! Here&apos;s your operational overview.</p>
+        <p className="text-slate-500">Welcome back, {volunteerName}! Here&apos;s your operational overview.</p>
       </header>
 
-      {/* Summary Stats - Updated with 7 cards for full metrics */}
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+      {/* Summary Stats — six numeric metrics in one balanced row */}
+      <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
         <Card className="bg-blue-50/50 border-blue-100 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-xs font-bold text-blue-900 uppercase tracking-widest">Assigned</CardTitle>
@@ -198,10 +221,7 @@ export default function VolunteerDashboard() {
             <p className="text-xs text-rose-600 mt-1 font-medium">Reported</p>
           </CardContent>
         </Card>
-      </div>
 
-      {/* Second row of stats */}
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
         <Card className="bg-sky-50/50 border-sky-100 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-xs font-bold text-sky-900 uppercase tracking-widest">Notifications</CardTitle>
@@ -209,10 +229,13 @@ export default function VolunteerDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-sky-900">{notificationsCount}</div>
-            <p className="text-xs text-sky-600 mt-1 font-medium">Unread signals</p>
+            <p className="text-xs text-sky-600 mt-1 font-medium">Total signals</p>
           </CardContent>
         </Card>
+      </div>
 
+      {/* Upcoming shift — richer content, given full width */}
+      <div className="grid gap-4 grid-cols-1">
         <Card className="bg-teal-50/50 border-teal-100 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-xs font-bold text-teal-900 uppercase tracking-widest">Upcoming Shift</CardTitle>
@@ -342,7 +365,7 @@ export default function VolunteerDashboard() {
             </h2>
           </div>
           <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-            <NotificationFeed recipient={VOLUNTEER_NAME} limit={5} />
+            <NotificationFeed recipient={volunteerName} limit={5} />
           </div>
         </div>
       </div>
@@ -361,7 +384,12 @@ function TaskCard({ task }: { task: Task }) {
   };
 
   return (
-    <Card className="overflow-hidden border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all duration-200 group">
+    <Link
+      href="/volunteer/tasks"
+      className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+      aria-label={`Open task: ${task.title}`}
+    >
+    <Card className="overflow-hidden border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all duration-200 group cursor-pointer">
       <CardContent className="p-0">
         <div className="flex">
           <div className={cn("w-1.5 shrink-0", 
@@ -400,13 +428,14 @@ function TaskCard({ task }: { task: Task }) {
                   <span className="text-sm font-semibold text-slate-700">{task.assignedBy || "Operations Control"}</span>
                 </div>
               </div>
-              <button className="h-8 w-8 rounded-full flex items-center justify-center text-slate-300 group-hover:text-indigo-600 group-hover:bg-indigo-50 transition-all">
+              <span className="h-8 w-8 rounded-full flex items-center justify-center text-slate-300 group-hover:text-indigo-600 group-hover:bg-indigo-50 transition-all">
                 <CaretRight size={20} weight="bold" />
-              </button>
+              </span>
             </div>
           </div>
         </div>
       </CardContent>
     </Card>
+    </Link>
   );
 }

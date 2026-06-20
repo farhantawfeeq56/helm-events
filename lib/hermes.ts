@@ -78,7 +78,9 @@ export interface HermesRequest {
 
 // ─── HermesResponse union (maps directly to agent JSON output) ──────────────
 // Each variant maps to a specific UI component in components/agent/:
-//   text              → MessageItem
+//   text              → MessageItem (plain prose — used for explanatory/meta
+//                       answers; NOT everything should be structured JSON)
+//   clarification     → ClarificationCard (agent needs more detail before acting)
 //   operational-card  → OperationalCard + ImpactAnalysis + RiskAssessment
 //                       + ResponseOptions + CommunicationPlan
 //   execution-checklist → ExecutionChecklist
@@ -86,9 +88,41 @@ export interface HermesRequest {
 
 export type HermesResponse =
   | { type: "text"; content: string }
+  | { type: "clarification"; content: string; questions: string[] }
   | { type: "operational-card"; content: string; incidentData: Incident }
   | { type: "execution-checklist"; content: string; checklist: ChecklistItem[] }
   | { type: "issue-report"; content: string; reportData: ReportedIssue };
+
+/**
+ * Defensive cleanup for `text`-typed agent replies. The agent should send prose
+ * for conversational/explanatory answers, but if it wraps a reply in a ```json
+ * fence or hands back a bare JSON object, we unwrap it to the human-readable
+ * field rather than leaking raw JSON to the operator. Pure (no imports) so it
+ * runs in both the server handler and the client renderer. Never returns a fence.
+ */
+export function sanitizeAgentText(raw: string): string {
+  if (!raw) return raw;
+  let s = raw.trim();
+
+  // Strip a single surrounding markdown code fence: ```json … ``` or ``` … ```
+  const fence = s.match(/^```(?:json|JSON)?\s*([\s\S]*?)\s*```$/);
+  if (fence) s = fence[1].trim();
+
+  // If what remains is a JSON object, surface a human-readable field from it
+  // instead of showing the operator raw JSON.
+  if (s.startsWith("{") && s.endsWith("}")) {
+    try {
+      const obj = JSON.parse(s);
+      for (const key of ["content", "message", "text", "answer", "response", "summary"]) {
+        const v = (obj as Record<string, unknown>)[key];
+        if (typeof v === "string" && v.trim()) return v.trim();
+      }
+    } catch {
+      // not valid JSON — fall through and return the de-fenced text
+    }
+  }
+  return s;
+}
 
 // ─── SSE event types from the bridge API ────────────────────────────────────
 

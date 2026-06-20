@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { Incident } from "@/models/incident";
 import { logActivity } from "@/lib/activity-logger";
+import { validateIncident, assertIncidentDeletable } from "@/lib/validation/integrity";
+import { errorResponse } from "@/lib/validation/errors";
 
 export async function GET(
   request: Request,
@@ -34,8 +36,13 @@ export async function PATCH(
     await connectToDatabase();
     const { id } = await params;
     const payload = await request.json();
+
+    await validateIncident(payload, { id });
+
     const incident = await Incident.findByIdAndUpdate(id, payload, {
       new: true,
+      runValidators: true,
+      context: "query",
     });
     if (!incident) {
       return NextResponse.json(
@@ -54,10 +61,7 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, data: incident });
   } catch (error) {
-    return NextResponse.json(
-      { success: false, error: "Failed to update incident" },
-      { status: 400 }
-    );
+    return errorResponse(error);
   }
 }
 
@@ -68,6 +72,10 @@ export async function DELETE(
   try {
     await connectToDatabase();
     const { id } = await params;
+
+    // Block deletion while tasks still reference this incident.
+    await assertIncidentDeletable(id);
+
     const incident = await Incident.findByIdAndDelete(id);
     if (!incident) {
       return NextResponse.json(
@@ -86,9 +94,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true, data: { id } });
   } catch (error) {
-    return NextResponse.json(
-      { success: false, error: "Failed to delete incident" },
-      { status: 500 }
-    );
+    return errorResponse(error);
   }
 }

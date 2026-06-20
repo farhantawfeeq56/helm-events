@@ -35,7 +35,7 @@ export default async function IncidentsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 px-6 py-10 text-slate-900">
+    <div className="min-h-[calc(100vh-4rem)] bg-slate-50 px-6 py-10 text-slate-900">
       <div className="mx-auto w-full max-w-6xl space-y-8">
         <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div className="space-y-1">
@@ -89,14 +89,17 @@ export default async function IncidentsPage() {
                 </div>
               </div>
               <div className="mt-4 flex items-center justify-between sm:mt-0">
-                <div className="flex -space-x-2">
-                  {/* Mock avatars for affected areas/people */}
-                  {[1, 2].map((i) => (
-                    <div key={i} className="h-8 w-8 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center">
-                      <Info size={14} className="text-slate-400" />
-                    </div>
-                  ))}
-                </div>
+                {/* Real signal: areas the agent flagged as impacted for this incident. */}
+                {incident.impactAnalysis && incident.impactAnalysis.length > 0 ? (
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400">
+                    <Info size={14} weight="bold" />
+                    <span>
+                      {incident.impactAnalysis.length} area{incident.impactAnalysis.length > 1 ? "s" : ""} impacted
+                    </span>
+                  </div>
+                ) : (
+                  <span />
+                )}
                 <div className="flex items-center gap-2 text-sm font-black text-indigo-600 transition-transform group-hover:translate-x-1 sm:ml-8">
                   DETAILS
                   <CaretRight size={16} weight="bold" />

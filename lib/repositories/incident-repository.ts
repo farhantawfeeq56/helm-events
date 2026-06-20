@@ -1,194 +1,19 @@
 import { Types } from "mongoose";
-import { Incident } from "@/types/incident";
-import { mockIncidents as hermesMockIncidents, type Incident as HermesIncident } from "@/lib/hermes";
+import { Incident, TimelineEvent, Risk } from "@/types/incident";
+import { type Incident as HermesIncident } from "@/lib/hermes";
 import { connectToDatabase } from "@/lib/db";
 import { Incident as IncidentModel } from "@/models/incident";
-import { getActiveEvent } from "@/lib/context/contextService";
 
 /**
  * INCIDENT REPOSITORY
- * 
- * This module acts as the central adapter layer for incident data.
- * 
- * FUTURE GCP INTEGRATION:
- * 1. Firestore: MOCK_INCIDENTS will be replaced by a Firestore collection reference.
- *    - State persistence will move from memory to Firestore.
- *    - Real-time updates will be handled via onSnapshot listeners.
- * 
- * 2. Vertex AI (GCP):
- *    - When a new incident is reported, a trigger will invoke the `bridge-cf` Cloud Function.
- *    - Hermes (Gemini 1.5 Pro) will analyze the incident and populate:
- *      - situation (summarized from logs)
- *      - impactAnalysis (cascading effects)
- *      - riskAssessment (probability/impact)
- *      - responseOptions (recommended actions)
- *      - communications (drafted messages)
- * 
- * 3. Tool Calling:
- *    - Approved ResponseOptions will trigger downstream Cloud Functions to update
- *      schedules, notify staff, or adjust resources.
+ *
+ * Central adapter between the persisted incident documents (MongoDB) and the
+ * rich UI `Incident` type. There is no mock/fallback data: reads come straight
+ * from the database, and the detail sections (timeline, risks, resources) are
+ * *derived* from real records — the activity log and the incident's own Hermes
+ * analysis — rather than fabricated. Sections with no underlying data render
+ * empty rather than inventing rows.
  */
-const MOCK_INCIDENTS: Incident[] = hermesMockIncidents.map((incident) => ({
-  ...incident,
-  situation: incident.description, // Initial fallback
-  eventId: "event-1", // Default event ID for now
-  affectedResources: [
-    {
-      id: "res-1",
-      name: "Main Stage",
-      type: "room",
-      impact: incident.severity === "Critical" ? "high" : "medium",
-      status: "Active",
-    },
-    {
-      id: "res-2",
-      name: "All Staff",
-      type: "speaker",
-      impact: "low",
-      status: "Notified",
-    }
-  ],
-  timeline: [
-    {
-      id: "tm-1",
-      timestamp: incident.timestamp,
-      title: "Incident Reported",
-      description: incident.description,
-      type: "incident_report",
-      status: "completed",
-    },
-    {
-      id: "tm-2",
-      timestamp: "5m later",
-      title: "Initial Assessment",
-      description: "Automated impact analysis completed by Hermes.",
-      type: "investigation",
-      status: "completed",
-    }
-  ],
-  risks: [
-    {
-      id: "risk-1",
-      title: incident.riskAssessment?.explanation || "Assessment pending",
-      probability: "medium",
-      impact: (incident.riskAssessment?.level?.toLowerCase() as "high" | "medium" | "low") || "medium",
-      mitigation: incident.riskAssessment?.mitigationStrategy || "No mitigation strategy defined",
-    },
-  ],
-}));
-
-// Add some more realistic data for one of the incidents to show off the UI
-const speakerDelayIncident = MOCK_INCIDENTS.find(i => i.id === "speaker-delay");
-if (speakerDelayIncident) {
-  speakerDelayIncident.situation = "Dr. Sarah Chen is delayed due to a multi-vehicle accident on I-95. She is safe but currently immobile and will not arrive for at least 30-40 minutes.";
-  speakerDelayIncident.affectedResources = [
-    { id: "room-main", name: "Main Stage", type: "room", impact: "high", status: "In Use" },
-    { id: "speaker-sarah", name: "Dr. Sarah Chen", type: "speaker", impact: "high", status: "Delayed" },
-    { id: "session-keynote", name: "Opening Keynote", type: "session", impact: "high", status: "Pending" },
-  ];
-  speakerDelayIncident.timeline = [
-    {
-      id: "tm-1",
-      timestamp: "09:45 AM",
-      title: "Delay Reported",
-      description: "Speaker's driver notified event staff of traffic delay.",
-      type: "incident_report",
-      status: "completed",
-    },
-    {
-      id: "tm-2",
-      timestamp: "09:50 AM",
-      title: "Impact Assessment",
-      description: "Hermes analyzed schedule and identified cascading delays for 3 subsequent sessions.",
-      type: "investigation",
-      status: "completed",
-    },
-    {
-      id: "tm-3",
-      timestamp: "09:55 AM",
-      title: "Response Plan Drafted",
-      description: "Communication plan and schedule adjustments prepared.",
-      type: "investigation",
-      status: "completed",
-    },
-    {
-      id: "tm-4",
-      timestamp: "10:00 AM",
-      title: "Executing Communications",
-      description: "Push notifications being dispatched to attendees.",
-      type: "communication",
-      status: "in-progress",
-    },
-  ];
-  speakerDelayIncident.risks = [
-    {
-      id: "risk-1",
-      title: "Schedule Cascade",
-      probability: "high",
-      impact: "high",
-      mitigation: "Tighten transition times between afternoon sessions.",
-    },
-    {
-      id: "risk-2",
-      title: "Attendee Dissatisfaction",
-      probability: "medium",
-      impact: "medium",
-      mitigation: "Proactive communication via push notifications and extra refreshments.",
-    },
-  ];
-}
-
-const internetOutageIncident = MOCK_INCIDENTS.find(i => i.id === "internet-outage");
-if (internetOutageIncident) {
-  internetOutageIncident.situation = "Total loss of Wi-Fi connectivity in Hall B. This area hosts all live coding workshops and high-bandwidth demos. Primary ISP reporting a local fiber cut.";
-  internetOutageIncident.affectedResources = [
-    { id: "hall-b", name: "Hall B", type: "room", impact: "high", status: "Critical" },
-    { id: "workshop-1", name: "Next.js Advanced Workshop", type: "session", impact: "high", status: "Interrupted" },
-    { id: "sponsor-1", name: "Vercel Demo Booth", type: "sponsor", impact: "medium", status: "Affected" },
-  ];
-  internetOutageIncident.timeline = [
-    {
-      id: "tm-1",
-      timestamp: "11:20 AM",
-      title: "Outage Detected",
-      description: "Automated network monitoring flagged Hall B gateway as offline.",
-      type: "incident_report",
-      status: "completed",
-    },
-    {
-      id: "tm-2",
-      timestamp: "11:22 AM",
-      title: "Venue IT Notified",
-      description: "Emergency ticket raised with venue engineering team.",
-      type: "investigation",
-      status: "completed",
-    },
-    {
-      id: "tm-3",
-      timestamp: "11:25 AM",
-      title: "Hotspot Deployment",
-      description: "Operations team dispatched with 5G backup units.",
-      type: "mitigation",
-      status: "in-progress",
-    }
-  ];
-  internetOutageIncident.risks = [
-    {
-      id: "risk-1",
-      title: "Sponsor SLA Breach",
-      probability: "medium",
-      impact: "high",
-      mitigation: "Document all downtime and provide complimentary lead retrieval credits.",
-    },
-    {
-      id: "risk-2",
-      title: "Social Media Sentiment Drop",
-      probability: "high",
-      impact: "medium",
-      mitigation: "Immediate public acknowledgement and regular updates.",
-    }
-  ];
-}
 
 // ─── MongoDB ⇆ UI mapping ───────────────────────────────────────────────────
 
@@ -220,6 +45,22 @@ function formatTimestamp(value: unknown): string {
   return d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 }
 
+/** Derive a single Risk row from the agent's risk assessment, if present. */
+function risksFromAnalysis(a: HermesIncident | undefined): Risk[] {
+  const ra = a?.riskAssessment;
+  if (!ra) return [];
+  const level = (ra.level?.toLowerCase() as "high" | "medium" | "low") || "medium";
+  return [
+    {
+      id: "risk-assessment",
+      title: ra.explanation || "Risk assessment",
+      probability: level,
+      impact: level,
+      mitigation: ra.mitigationStrategy || "No mitigation strategy defined.",
+    },
+  ];
+}
+
 /** A persisted incident document shape (lean), loosely typed. */
 type IncidentDoc = {
   _id: unknown;
@@ -238,8 +79,10 @@ type IncidentDoc = {
 
 /**
  * Maps a MongoDB incident document to the rich UI `Incident` type.
- * Hermes-sourced incidents carry a full `analysis` payload; manually-created
- * ones are expanded with sensible defaults so every incident renders.
+ * Hermes-sourced incidents carry a full `analysis` payload (impact, response
+ * options, risk assessment, comms); manually-created ones map to sensible
+ * defaults. Timeline/affectedResources are left empty here and derived
+ * separately on the detail path (see `getIncidentById`).
  */
 function mapDocToIncident(doc: IncidentDoc): Incident {
   const eventId = doc.eventId ? String(doc.eventId) : "live-session";
@@ -252,7 +95,7 @@ function mapDocToIncident(doc: IncidentDoc): Incident {
       situation: a.description ?? doc.description ?? "",
       affectedResources: [],
       timeline: [],
-      risks: [],
+      risks: risksFromAnalysis(a),
       eventId,
     };
   }
@@ -276,35 +119,83 @@ function mapDocToIncident(doc: IncidentDoc): Incident {
   };
 }
 
-// ─── Reads (DB-first, mock fallback) ────────────────────────────────────────
+// ─── Timeline derivation (from the real activity log) ───────────────────────
+
+/** Map an activity action onto a timeline event category. */
+function timelineType(action: string): TimelineEvent["type"] {
+  const a = (action || "").toLowerCase();
+  if (a.includes("report") || a.includes("create")) return "incident_report";
+  if (a.includes("resolve") || a.includes("close")) return "resolution";
+  if (a.includes("plan") || a.includes("assign") || a.includes("mitigat") || a.includes("dispatch")) return "mitigation";
+  if (a.includes("notif") || a.includes("comm") || a.includes("message")) return "communication";
+  return "investigation";
+}
+
+function humanizeAction(action: string): string {
+  return (action || "Activity")
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/**
+ * Builds the incident timeline from real `Activity` entries targeting this
+ * incident (`target = "incident:<slug>"`). Newest-last so the detail view reads
+ * top-to-bottom in chronological order. Empty when nothing has been logged yet.
+ */
+async function deriveTimeline(slug: string | undefined): Promise<TimelineEvent[]> {
+  if (!slug) return [];
+  try {
+    const { Activity } = await import("@/models/activity");
+    const entries = (await Activity.find({ target: `incident:${slug}` })
+      .sort({ timestamp: 1 })
+      .limit(50)
+      .lean()) as Array<{
+        _id: unknown;
+        action?: string;
+        details?: string;
+        user?: string;
+        timestamp?: unknown;
+        createdAt?: unknown;
+      }>;
+
+    return entries.map((e) => ({
+      id: String(e._id),
+      timestamp: formatTimestamp(e.timestamp || e.createdAt),
+      title: humanizeAction(e.action || "Activity"),
+      description: e.details || "",
+      type: timelineType(e.action || ""),
+      status: "completed" as const,
+    }));
+  } catch (error) {
+    console.error("deriveTimeline failed:", error);
+    return [];
+  }
+}
+
+// ─── Reads (DB-only) ────────────────────────────────────────────────────────
 
 export async function getAllIncidents(): Promise<Incident[]> {
-  try {
-    await connectToDatabase();
-    const docs = (await IncidentModel.find().sort({ createdAt: -1 }).lean()) as IncidentDoc[];
-    if (docs.length > 0) return docs.map(mapDocToIncident);
-  } catch (error) {
-    console.error("getAllIncidents: DB unavailable, falling back to mock.", error);
-  }
-  return MOCK_INCIDENTS;
+  await connectToDatabase();
+  const docs = (await IncidentModel.find().sort({ createdAt: -1 }).lean()) as IncidentDoc[];
+  return docs.map(mapDocToIncident);
 }
 
 /**
  * Fetches a single incident by its URL id — the Hermes slug (kebab-case) or a
- * Mongo ObjectId — then falls back to the in-memory mock set.
+ * Mongo ObjectId — and enriches it with a timeline derived from the activity
+ * log. Returns undefined when no such incident exists (callers handle 404).
  */
 export async function getIncidentById(id: string): Promise<Incident | undefined> {
-  try {
-    await connectToDatabase();
-    let doc = (await IncidentModel.findOne({ slug: id }).lean()) as IncidentDoc | null;
-    if (!doc && Types.ObjectId.isValid(id)) {
-      doc = (await IncidentModel.findById(id).lean()) as IncidentDoc | null;
-    }
-    if (doc) return mapDocToIncident(doc);
-  } catch (error) {
-    console.error("getIncidentById: DB error, falling back to mock.", error);
+  await connectToDatabase();
+  let doc = (await IncidentModel.findOne({ slug: id }).lean()) as IncidentDoc | null;
+  if (!doc && Types.ObjectId.isValid(id)) {
+    doc = (await IncidentModel.findById(id).lean()) as IncidentDoc | null;
   }
-  return MOCK_INCIDENTS.find((incident) => incident.id === id);
+  if (!doc) return undefined;
+
+  const incident = mapDocToIncident(doc);
+  incident.timeline = await deriveTimeline(doc.slug || incident.id);
+  return incident;
 }
 
 export async function getIncidentsByStatus(status: string): Promise<Incident[]> {
@@ -329,6 +220,7 @@ export async function getIncidentsByEventId(eventId: string): Promise<Incident[]
 export async function persistHermesIncident(data: HermesIncident): Promise<void> {
   try {
     await connectToDatabase();
+    const { getActiveEvent } = await import("@/lib/context/contextService");
 
     const activeEvent = await getActiveEvent().catch(() => null);
     const eventId = activeEvent?._id ? String(activeEvent._id) : undefined;
@@ -347,6 +239,7 @@ export async function persistHermesIncident(data: HermesIncident): Promise<void>
     const existing = await IncidentModel.findOne({ slug: data.id });
     if (existing) {
       Object.assign(existing, core);
+      existing.markModified("analysis");
       await existing.save();
       return;
     }

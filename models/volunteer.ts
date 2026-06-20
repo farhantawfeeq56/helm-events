@@ -56,6 +56,9 @@ const volunteerSchema = new Schema(
   },
 );
 
+// No two volunteers can share an email within the same event.
+volunteerSchema.index({ eventId: 1, email: 1 }, { unique: true });
+
 export type VolunteerDocument = InferSchemaType<typeof volunteerSchema>;
 
 export const Volunteer = models.Volunteer || model("Volunteer", volunteerSchema);

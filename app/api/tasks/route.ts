@@ -4,6 +4,8 @@ import { Task } from "@/models/task";
 import { logActivity } from "@/lib/activity-logger";
 import { getPaginatedResponse } from "@/lib/utils";
 import { sendNotification } from "@/lib/notification-service";
+import { validateTask } from "@/lib/validation/integrity";
+import { errorResponse } from "@/lib/validation/errors";
 
 export async function GET(request: Request) {
   try {
@@ -30,6 +32,7 @@ export async function POST(request: Request) {
   try {
     await connectToDatabase();
     const payload = await request.json();
+    await validateTask(payload);
     const task = await Task.create(payload);
 
     await logActivity({
@@ -54,12 +57,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, data: task }, { status: 201 });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Unable to create task.";
-
-    return NextResponse.json(
-      { success: false, error: message },
-      { status: 400 }
-    );
+    return errorResponse(error);
   }
 }

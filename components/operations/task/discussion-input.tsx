@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, type ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Paperclip, PaperPlaneRight, X } from "@phosphor-icons/react";
@@ -21,6 +21,7 @@ export function DiscussionInput({ onSendMessage, disabled }: DiscussionInputProp
   const [isSending, setIsSending] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSend = async () => {
     if ((!content.trim() && attachments.length === 0) || isSending) return;
@@ -45,18 +46,31 @@ export function DiscussionInput({ onSendMessage, disabled }: DiscussionInputProp
     }
   };
 
-  const simulateFileUpload = () => {
-    // In a real app, this would open a file picker and upload to S3/GCS
-    const mockFile = {
-      name: `attachment-${Math.random().toString(36).substring(7)}.pdf`,
-      url: "#",
-      type: "application/pdf",
-    };
-    setAttachments([...attachments, mockFile]);
+  const openFilePicker = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFilesSelected = (e: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
+    // Use the real selected file's metadata and a local object URL for preview.
+    const picked: Attachment[] = files.map((f) => ({
+      name: f.name,
+      url: URL.createObjectURL(f),
+      type: f.type || "application/octet-stream",
+    }));
+    setAttachments((prev) => [...prev, ...picked]);
+    // Reset so picking the same file again re-triggers onChange.
+    e.target.value = "";
   };
 
   const removeAttachment = (index: number) => {
-    setAttachments(attachments.filter((_, i) => i !== index));
+    setAttachments((prev) => {
+      const target = prev[index];
+      // Release the object URL we created for the local preview.
+      if (target?.url?.startsWith("blob:")) URL.revokeObjectURL(target.url);
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
   return (
@@ -95,9 +109,16 @@ export function DiscussionInput({ onSendMessage, disabled }: DiscussionInputProp
             disabled={disabled || isSending}
             className="min-h-[44px] max-h-[200px] py-3 pr-12 rounded-2xl border-slate-200 focus-visible:ring-indigo-500 resize-none font-medium text-slate-600"
           />
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            onChange={handleFilesSelected}
+            className="hidden"
+          />
           <button
             type="button"
-            onClick={simulateFileUpload}
+            onClick={openFilePicker}
             disabled={disabled || isSending}
             className="absolute right-3 bottom-3 p-1.5 text-slate-400 hover:text-indigo-600 transition-colors rounded-lg hover:bg-slate-50"
           >

@@ -4,9 +4,59 @@
 import { Badge } from "@/components/ui/badge";
 import { Column } from "./collection-table";
 import Link from "next/link";
+import { getShiftDisplayStatus } from "@/lib/shifts";
 
 export const getColumns = (collectionName: string): Column<any>[] => {
   switch (collectionName) {
+    case "shifts":
+      return [
+        { header: "Shift", accessorKey: "title" },
+        {
+          header: "Assigned To",
+          accessorKey: "assignedTo",
+          cell: (item: any) =>
+            item.assignedTo ? (
+              item.assignedTo
+            ) : (
+              <span className="text-slate-400">Unassigned</span>
+            ),
+        },
+        { header: "Role", accessorKey: "role" },
+        {
+          header: "When",
+          accessorKey: "startTime",
+          cell: (item: any) => (
+            <span className="whitespace-nowrap">
+              {item.date ? `${item.date} · ` : ""}
+              {item.startTime || "—"}
+              {item.endTime ? `–${item.endTime}` : ""}
+            </span>
+          ),
+        },
+        { header: "Location", accessorKey: "location" },
+        {
+          header: "Status",
+          accessorKey: "status",
+          cell: (item: any) => {
+            const live = getShiftDisplayStatus(item);
+            return (
+              <Badge
+                className={
+                  live === "in-progress"
+                    ? "bg-blue-50 text-blue-700 border-blue-100"
+                    : live === "completed"
+                    ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+                    : live === "cancelled"
+                    ? "bg-slate-200 text-slate-700 border-slate-300"
+                    : "bg-amber-50 text-amber-700 border-amber-100"
+                }
+              >
+                {live === "in-progress" ? "On Duty" : live === "upcoming" ? "Upcoming" : live}
+              </Badge>
+            );
+          },
+        },
+      ];
     case "speakers":
       return [
         { header: "Name", accessorKey: "fullName" },

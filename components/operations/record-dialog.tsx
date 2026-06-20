@@ -47,6 +47,8 @@ export function RecordDialog({
 }: RecordDialogProps) {
   const [formData, setFormData] = useState<any>(initialData || {});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (initialData) {
@@ -54,19 +56,34 @@ export function RecordDialog({
     } else {
       setFormData({});
     }
+    // Clear any prior validation feedback when the dialog reopens.
+    setFormError(null);
+    setFieldErrors({});
   }, [initialData, isOpen]);
 
   const handleChange = (name: string, value: any) => {
     setFormData((prev: any) => ({ ...prev, [name]: value }));
+    // Clear this field's error as the user corrects it.
+    setFieldErrors((prev) => {
+      if (!prev[name]) return prev;
+      const next = { ...prev };
+      delete next[name];
+      return next;
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setFormError(null);
+    setFieldErrors({});
     try {
       await onSave(formData);
       onClose();
     } catch (error) {
+      const err = error as Error & { fieldErrors?: Record<string, string> };
+      setFormError(err?.message || "Failed to save record.");
+      setFieldErrors(err?.fieldErrors || {});
       console.error("Failed to save record:", error);
     } finally {
       setIsSubmitting(false);
@@ -80,9 +97,16 @@ export function RecordDialog({
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
+          {formError && (
+            <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm font-medium text-rose-700">
+              {formError}
+            </div>
+          )}
           {fields.map((field) => (
             <div key={field.name} className="grid gap-2">
-              <Label htmlFor={field.name}>{field.label}</Label>
+              <Label htmlFor={field.name} className={fieldErrors[field.name] ? "text-rose-600" : ""}>
+                {field.label}
+              </Label>
               {field.type === "select" ? (
                 <Select
                   value={formData[field.name] || ""}
@@ -113,7 +137,11 @@ export function RecordDialog({
                   value={formData[field.name] || ""}
                   onChange={(e) => handleChange(field.name, e.target.value)}
                   placeholder={field.placeholder}
+                  aria-invalid={!!fieldErrors[field.name]}
                 />
+              )}
+              {fieldErrors[field.name] && (
+                <p className="text-xs font-medium text-rose-600">{fieldErrors[field.name]}</p>
               )}
             </div>
           ))}

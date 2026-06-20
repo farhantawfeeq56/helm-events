@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { connectToDatabase } from "@/lib/db";
 import { Task } from "@/models/task";
 import { logActivity } from "@/lib/activity-logger";
 import { sendNotification } from "@/lib/notification-service";
 import { NotificationType } from "@/types/data-hub";
+import { verifySessionToken, SESSION_COOKIE } from "@/lib/auth/session";
+import { validateTask } from "@/lib/validation/integrity";
+import { errorResponse } from "@/lib/validation/errors";
+import { maybeRecordSnapshot } from "@/lib/services/metrics-service";
 
 export async function GET(
   request: Request,
@@ -44,8 +49,12 @@ export async function PATCH(
       );
     }
 
+    await validateTask(payload, { id, existing: oldTask.toObject() });
+
     const task = await Task.findByIdAndUpdate(id, payload, {
       new: true,
+      runValidators: true,
+      context: "query",
     }).populate("incidentId").populate("eventId");
     
     if (!task) {
@@ -55,9 +64,20 @@ export async function PATCH(
       );
     }
 
-    let details = `Updated task: ${task.title}`;
+    // Who is making this change (volunteer or organizer), for a precise audit trail.
+    const sessionToken = (await cookies()).get(SESSION_COOKIE)?.value;
+    const session = await verifySessionToken(sessionToken);
+    const actor = session?.name || "Operations";
+    const actorRole = session?.role ? session.role.charAt(0).toUpperCase() + session.role.slice(1) : "";
+    const actorLabel = actorRole ? `${actor} (${actorRole})` : actor;
+
+    let details = `${actorLabel} updated task "${task.title}".`;
     if (payload.status && payload.status !== oldTask.status) {
-      details = `Status changed from ${oldTask.status} to ${payload.status} for task: ${task.title}`;
+      const verb = payload.status === "completed" ? "marked as completed" : `moved to "${payload.status}"`;
+      details =
+        `${actorLabel} ${verb} the task "${task.title}" (was "${oldTask.status}")` +
+        (task.assignedTo ? ` · Assigned to: ${task.assignedTo}` : "") +
+        ` · Priority: ${task.priority || "medium"}`;
       
       // Trigger notification for status change
       if (task.assignedTo) {
@@ -89,11 +109,12 @@ export async function PATCH(
 
     // Trigger notification if assignment changed
     if (payload.assignedTo && payload.assignedTo !== oldTask.assignedTo) {
+      details = `${actorLabel} reassigned task "${task.title}" from ${oldTask.assignedTo || "Unassigned"} to ${payload.assignedTo} · Priority: ${task.priority || "medium"}`;
       await sendNotification({
         recipient: payload.assignedTo,
         type: "task_assigned",
         title: "New Task Assigned",
-        message: `You have been assigned a new task: ${task.title}`,
+        message: `${actorLabel} assigned you the task: ${task.title}`,
         priority: task.priority === "high" ? "high" : "medium",
         sourceId: task._id.toString(),
         link: `/volunteer/tasks/${task._id}`,
@@ -101,19 +122,28 @@ export async function PATCH(
     }
 
     await logActivity({
-      user: "Admin",
+      user: actor,
       type: "human",
-      action: "update",
+      action:
+        payload.status === "completed"
+          ? "task_completed"
+          : payload.status && payload.status !== oldTask.status
+            ? "task_status_changed"
+            : payload.assignedTo && payload.assignedTo !== oldTask.assignedTo
+              ? "task_reassigned"
+              : "task_updated",
       target: `task:${task._id}`,
       details,
     });
 
+    // A task changing state is real operational progress — capture it (throttled).
+    if (payload.status && payload.status !== oldTask.status && oldTask.eventId) {
+      await maybeRecordSnapshot(String(oldTask.eventId), { trigger: `task_${payload.status}` });
+    }
+
     return NextResponse.json({ success: true, data: task });
-  } catch {
-    return NextResponse.json(
-      { success: false, error: "Failed to update task" },
-      { status: 400 }
-    );
+  } catch (error) {
+    return errorResponse(error);
   }
 }
 

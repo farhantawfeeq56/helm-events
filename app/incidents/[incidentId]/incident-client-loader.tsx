@@ -68,7 +68,7 @@ export function IncidentClientLoader({ incidentId }: { incidentId: string }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="min-h-[calc(100vh-4rem)] bg-slate-50 flex items-center justify-center">
         <div className="flex items-center gap-3 text-slate-400">
           <Pulse size={20} className="animate-pulse" />
           <span className="text-sm font-black uppercase tracking-widest">Loading incident data...</span>
@@ -79,7 +79,7 @@ export function IncidentClientLoader({ incidentId }: { incidentId: string }) {
 
   if (!incident) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center gap-6 p-8">
+      <div className="min-h-[calc(100vh-4rem)] bg-slate-50 flex flex-col items-center justify-center gap-6 p-8">
         <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center shadow-sm max-w-md">
           <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3">Incident Not Found</p>
           <p className="text-sm font-medium text-slate-500 mb-6">
@@ -95,7 +95,7 @@ export function IncidentClientLoader({ incidentId }: { incidentId: string }) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 px-6 py-10 text-slate-900">
+    <div className="min-h-[calc(100vh-4rem)] bg-slate-50 px-6 py-10 text-slate-900">
       <div className="mx-auto w-full max-w-7xl space-y-8">
         <Link
           href="/incidents"
@@ -123,7 +123,11 @@ export function IncidentClientLoader({ incidentId }: { incidentId: string }) {
         <div className="grid gap-8 lg:grid-cols-3 items-start">
           <div className="lg:col-span-2 space-y-12">
             <Situation situation={incident.situation} />
-            <ResponseOptions options={incident.responseOptions} />
+            <ResponseOptions
+              options={incident.responseOptions}
+              incidentId={incident.id}
+              executionStatus={incident.executionStatus}
+            />
             <Impact
               affectedResources={incident.affectedResources}
               impactAnalysis={incident.impactAnalysis}

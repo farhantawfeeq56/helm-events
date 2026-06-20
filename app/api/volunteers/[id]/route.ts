@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { Volunteer } from "@/models/volunteer";
 import { logActivity } from "@/lib/activity-logger";
+import { validateVolunteer, assertVolunteerDeletable } from "@/lib/validation/integrity";
+import { errorResponse } from "@/lib/validation/errors";
 
 export async function GET(
   request: Request,
@@ -34,15 +36,21 @@ export async function PATCH(
     await connectToDatabase();
     const { id } = await params;
     const payload = await request.json();
-    const volunteer = await Volunteer.findByIdAndUpdate(id, payload, {
-      new: true,
-    });
-    if (!volunteer) {
+
+    const existing = await Volunteer.findById(id);
+    if (!existing) {
       return NextResponse.json(
         { success: false, error: "Volunteer not found" },
         { status: 404 }
       );
     }
+    await validateVolunteer(payload, { id, existing: existing.toObject() });
+
+    const volunteer = await Volunteer.findByIdAndUpdate(id, payload, {
+      new: true,
+      runValidators: true,
+      context: "query",
+    });
 
     await logActivity({
       user: "Admin",
@@ -54,10 +62,7 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, data: volunteer });
   } catch (error) {
-    return NextResponse.json(
-      { success: false, error: "Failed to update volunteer" },
-      { status: 400 }
-    );
+    return errorResponse(error);
   }
 }
 
@@ -68,6 +73,10 @@ export async function DELETE(
   try {
     await connectToDatabase();
     const { id } = await params;
+
+    // Block deletion while the volunteer still has active work assigned.
+    await assertVolunteerDeletable(id);
+
     const volunteer = await Volunteer.findByIdAndDelete(id);
     if (!volunteer) {
       return NextResponse.json(
@@ -86,9 +95,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true, data: { id } });
   } catch (error) {
-    return NextResponse.json(
-      { success: false, error: "Failed to delete volunteer" },
-      { status: 500 }
-    );
+    return errorResponse(error);
   }
 }

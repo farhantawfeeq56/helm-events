@@ -2,24 +2,22 @@
 
 import React, { useState } from "react";
 import { NotificationFeed } from "@/components/operations/notification-feed";
-import { Bell, Trash } from "@phosphor-icons/react";
-import { Button } from "@/components/ui/button";
+import { Bell } from "@phosphor-icons/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/lib/context/auth-context";
 
 export default function VolunteerNotificationsPage() {
-  const recipient = "Volunteer User";
+  const user = useAuth();
+  // Notifications are keyed by recipient name (same identity used for tasks,
+  // shifts and acknowledgements). Fall back to a harmless placeholder until the
+  // session resolves so the feed simply shows the empty state.
+  const recipient = user?.name || "Volunteer";
   const [unreadCount, setUnreadCount] = useState(0);
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Notifications</h2>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="gap-2">
-            <Trash className="w-4 h-4" />
-            Clear History
-          </Button>
-        </div>
       </div>
 
       <div className="grid gap-4">

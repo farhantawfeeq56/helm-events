@@ -1,9 +1,12 @@
+import Link from "next/link";
 import { connectToDatabase } from "@/lib/db";
 import { Event } from "@/models/event";
 import { Speaker } from "@/models/speaker";
 import { Session } from "@/models/session";
 import { Volunteer } from "@/models/volunteer";
 import { Activity } from "@/models/activity";
+import { getActiveEvent } from "@/lib/context/contextService";
+import { computeEventMetrics } from "@/lib/services/metrics-service";
 
 // Live dashboard: reads counts from MongoDB on each request. Must not be
 // statically prerendered at build time (the DB may be unreachable then).
@@ -12,13 +15,23 @@ export const dynamic = "force-dynamic";
 export default async function DashboardPage() {
   await connectToDatabase();
 
-  const [eventCount, speakerCount, sessionCount, volunteerCount, recentActivities] = await Promise.all([
+  const [eventCount, speakerCount, sessionCount, volunteerCount, recentActivities, activeEvent] = await Promise.all([
     Event.countDocuments(),
     Speaker.countDocuments(),
     Session.countDocuments(),
     Volunteer.countDocuments(),
     Activity.find().sort({ createdAt: -1 }).limit(5).lean(),
+    getActiveEvent().catch(() => null),
   ]);
+
+  const metrics = activeEvent?._id ? await computeEventMetrics(String(activeEvent._id)) : null;
+
+  const readinessTone =
+    !metrics || metrics.operationalReadiness >= 80
+      ? "text-emerald-600"
+      : metrics.operationalReadiness >= 55
+        ? "text-amber-600"
+        : "text-rose-600";
 
   return (
     <div className="p-6">
@@ -47,16 +60,49 @@ export default async function DashboardPage() {
           </div>
         </div>
 
+        {metrics && (
+          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="mb-4 flex items-center justify-between">
+              <div className="font-semibold">Operational Performance</div>
+              <Link href="/operations/metrics" className="text-sm font-medium text-indigo-600 hover:text-indigo-700">
+                View metrics →
+              </Link>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div>
+                <div className="text-xs font-bold uppercase tracking-widest text-slate-400">Readiness</div>
+                <div className={`mt-1 text-2xl font-black ${readinessTone}`}>{metrics.operationalReadiness}</div>
+              </div>
+              <div>
+                <div className="text-xs font-bold uppercase tracking-widest text-slate-400">Task Completion</div>
+                <div className="mt-1 text-2xl font-black text-slate-900">
+                  {metrics.taskCompletionRate}<span className="text-base text-slate-400">%</span>
+                </div>
+              </div>
+              <div>
+                <div className="text-xs font-bold uppercase tracking-widest text-slate-400">Incident Resolution</div>
+                <div className="mt-1 text-2xl font-black text-slate-900">
+                  {metrics.incidentResolutionRate}<span className="text-base text-slate-400">%</span>
+                </div>
+              </div>
+              <div>
+                <div className="text-xs font-bold uppercase tracking-widest text-slate-400">Open Incidents</div>
+                <div className="mt-1 text-2xl font-black text-slate-900">{metrics.incidentsActive}</div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
           <div className="col-span-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="font-semibold">Recent Activity</div>
             <div className="mt-4 space-y-4">
               {recentActivities.length > 0 ? (
-                recentActivities.map((activity: any) => (
-                  <div key={activity._id.toString()} className="flex items-center gap-4">
+                (recentActivities as unknown as Array<{ _id: unknown; details?: string; createdAt: string | Date }>).map((activity) => (
+                  <div key={String(activity._id)} className="flex items-center gap-4">
                     <div className="h-2 w-2 rounded-full bg-sky-500" />
                     <div className="flex-1 space-y-1">
-                      <p className="text-sm font-medium leading-none">
+                      <p className="text-sm font-medium leading-snug line-clamp-2">
                         {activity.details}
                       </p>
                       <p className="text-xs text-slate-500">
