@@ -11,6 +11,7 @@ import { Facility } from "@/models/facility";
 import { Activity } from "@/models/activity";
 import { Task } from "@/models/task";
 import { Incident } from "@/models/incident";
+import { Shift } from "@/models/shift";
 import { CollectionView } from "@/components/operations/collection-view";
 import { ActivityTimeline } from "@/components/operations/activity-timeline";
 import { DemoGenerator } from "@/components/operations/demo-generator";
@@ -31,6 +32,10 @@ import {
   Buildings,
   IdentificationCard,
   ListBullets,
+  CalendarCheck,
+  Gauge,
+  ListChecks,
+  Heartbeat,
 } from "@phosphor-icons/react/dist/ssr";
 
 export const dynamic = "force-dynamic";
@@ -56,6 +61,7 @@ export default async function OperationsPage({
   let activityCount = 0;
   let taskCount = 0;
   let incidentCount = 0;
+  let shiftCount = 0;
   let latestEvent: (EventDocument & { _id: { toString(): string } }) | null = null;
 
   // Conditional data fetching
@@ -74,10 +80,11 @@ export default async function OperationsPage({
       Activity.countDocuments(),
       Task.countDocuments(),
       Incident.countDocuments(),
+      Shift.countDocuments(),
       Event.findOne().sort({ createdAt: -1 }).lean(),
     ]);
 
-    const counts = results.slice(0, 12) as number[];
+    const counts = results.slice(0, 13) as number[];
     [
       eventCount,
       speakerCount,
@@ -91,8 +98,9 @@ export default async function OperationsPage({
       activityCount,
       taskCount,
       incidentCount,
+      shiftCount,
     ] = counts;
-    latestEvent = results[12] as (EventDocument & { _id: { toString(): string } }) | null;
+    latestEvent = results[13] as (EventDocument & { _id: { toString(): string } }) | null;
   } else if (!eventId) {
     // Collection view needs the latest event ID as a fallback if no eventId is provided
     latestEvent = await Event.findOne()
@@ -112,6 +120,7 @@ export default async function OperationsPage({
       rooms: "Rooms",
       organizers: "Organizers",
       facilities: "Facilities",
+      shifts: "Shifts",
       tasks: "Tasks",
       incidents: "Incidents",
       logs: "API Logs",
@@ -123,7 +132,7 @@ export default async function OperationsPage({
     const title = titles[collection];
 
     return (
-      <div className="min-h-screen bg-slate-50 px-6 py-10 text-slate-900">
+      <div className="min-h-[calc(100vh-4rem)] bg-slate-50 px-6 py-10 text-slate-900">
         <div className="mx-auto w-full max-w-6xl">
           <Link
             href="/operations"
@@ -277,12 +286,47 @@ export default async function OperationsPage({
           color: "text-amber-600",
           bg: "bg-amber-50",
         },
+        {
+          id: "shifts",
+          name: "Shifts",
+          icon: CalendarCheck,
+          count: shiftCount,
+          color: "text-indigo-600",
+          bg: "bg-indigo-50",
+        },
+        {
+          id: "task-operations",
+          name: "Task Operations",
+          icon: ListChecks,
+          count: "Live",
+          color: "text-rose-600",
+          bg: "bg-rose-50",
+          href: "/operations/task-operations",
+        },
         ],
         },
     {
       title: "Runtime",
       description: "System health and real-time analytics",
       items: [
+        {
+          id: "event-health",
+          name: "Event Health",
+          icon: Heartbeat,
+          count: "Live",
+          color: "text-rose-600",
+          bg: "bg-rose-50",
+          href: "/operations/health",
+        },
+        {
+          id: "metrics",
+          name: "Performance",
+          icon: Gauge,
+          count: "Live",
+          color: "text-indigo-600",
+          bg: "bg-indigo-50",
+          href: "/operations/metrics",
+        },
         {
           id: "activities",
           name: "Activity Log",
@@ -309,18 +353,19 @@ export default async function OperationsPage({
         },
         {
           id: "analytics",
-          name: "Analytics",
+          name: "Resolution Analytics",
           icon: ChartLineUp,
-          count: "v2.0",
+          count: "Live",
           color: "text-orange-600",
           bg: "bg-orange-50",
+          href: "/operations/analytics",
         },
       ],
     },
   ];
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.05),_transparent_25%),radial-gradient(circle_at_top_right,_rgba(14,165,233,0.05),_transparent_25%),#f8fafc] px-6 py-10 text-slate-900">
+    <div className="min-h-[calc(100vh-4rem)] bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.05),_transparent_25%),radial-gradient(circle_at_top_right,_rgba(14,165,233,0.05),_transparent_25%),#f8fafc] px-6 py-10 text-slate-900">
       <div className="mx-auto w-full max-w-6xl space-y-12">
         <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div className="space-y-1">
@@ -485,7 +530,7 @@ export default async function OperationsPage({
                 {category.items.map((item) => (
                   <Link
                     key={item.id}
-                    href={`?collection=${item.id}`}
+                    href={(item as { href?: string }).href ?? `?collection=${item.id}`}
                     className="group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-1 hover:border-indigo-200 hover:shadow-md"
                   >
                     <div className="flex items-start justify-between">

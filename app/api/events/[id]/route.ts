@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { Event } from "@/models/event";
 import { logActivity } from "@/lib/activity-logger";
+import { validateEvent, assertEventDeletable } from "@/lib/validation/integrity";
+import { errorResponse } from "@/lib/validation/errors";
 
 export async function GET(
   request: Request,
@@ -34,15 +36,21 @@ export async function PATCH(
     await connectToDatabase();
     const { id } = await params;
     const payload = await request.json();
-    const event = await Event.findByIdAndUpdate(id, payload, {
-      new: true,
-    });
-    if (!event) {
+
+    const existing = await Event.findById(id);
+    if (!existing) {
       return NextResponse.json(
         { success: false, error: "Event not found" },
         { status: 404 }
       );
     }
+    await validateEvent(payload, { id, existing: existing.toObject() });
+
+    const event = await Event.findByIdAndUpdate(id, payload, {
+      new: true,
+      runValidators: true,
+      context: "query",
+    });
 
     await logActivity({
       user: "Admin",
@@ -54,10 +62,7 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, data: event });
   } catch (error) {
-    return NextResponse.json(
-      { success: false, error: "Failed to update event" },
-      { status: 400 }
-    );
+    return errorResponse(error);
   }
 }
 
@@ -68,6 +73,10 @@ export async function DELETE(
   try {
     await connectToDatabase();
     const { id } = await params;
+
+    // Block deletion while dependent records still point at this event.
+    await assertEventDeletable(id);
+
     const event = await Event.findByIdAndDelete(id);
     if (!event) {
       return NextResponse.json(
@@ -86,9 +95,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true, data: { id } });
   } catch (error) {
-    return NextResponse.json(
-      { success: false, error: "Failed to delete event" },
-      { status: 500 }
-    );
+    return errorResponse(error);
   }
 }

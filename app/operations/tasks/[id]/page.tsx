@@ -11,14 +11,19 @@ import {
   Calendar,
   User,
   Warning,
-  Circle
+  Circle,
+  Sparkle,
+  Prohibit,
+  Timer,
 } from "@phosphor-icons/react/dist/ssr";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { StatusTransition, type TaskStatus } from "@/components/operations/task/status-transition";
+import { TaskOpsControls } from "@/components/operations/task/task-ops-controls";
 import { ActivityTimeline } from "@/components/operations/activity-timeline";
 import { TaskDiscussion } from "@/components/operations/task/task-discussion";
+import { isOverdue, dueLabel } from "@/lib/tasks";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +38,10 @@ export default async function TaskDetailPage({
   if (!task) {
     notFound();
   }
+
+  const overdue = isOverdue(task);
+  const due = dueLabel(task);
+  const escalationLevel = task.escalationLevel || 0;
 
   const getPriorityColor = (priority: string) => {
     switch (priority?.toLowerCase()) {
@@ -54,7 +63,7 @@ export default async function TaskDetailPage({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 px-6 py-10 text-slate-900">
+    <div className="min-h-[calc(100vh-4rem)] bg-slate-50 px-6 py-10 text-slate-900">
       <div className="mx-auto w-full max-w-7xl space-y-8">
         <Link
           href="/operations?collection=tasks"
@@ -74,6 +83,21 @@ export default async function TaskDetailPage({
               <Circle size={8} weight="fill" />
               <span className="uppercase tracking-widest">{task.status || "OPEN"}</span>
             </div>
+            {overdue && (
+              <Badge variant="outline" className="border-rose-200 bg-rose-50 text-rose-700 text-xs font-black uppercase tracking-widest px-3 py-1">
+                <Timer size={12} weight="bold" className="mr-1" /> {due}
+              </Badge>
+            )}
+            {task.status === "blocked" && (
+              <Badge variant="outline" className="border-rose-200 bg-rose-50 text-rose-700 text-xs font-black uppercase tracking-widest px-3 py-1">
+                <Prohibit size={12} weight="bold" className="mr-1" /> Blocked
+              </Badge>
+            )}
+            {escalationLevel > 0 && (
+              <Badge variant="outline" className="border-orange-200 bg-orange-50 text-orange-700 text-xs font-black uppercase tracking-widest px-3 py-1">
+                <Warning size={12} weight="bold" className="mr-1" /> Escalated · L{escalationLevel}
+              </Badge>
+            )}
           </div>
           <h1 className="text-5xl font-black tracking-tight text-slate-900 leading-none">
             {task.title}
@@ -89,6 +113,20 @@ export default async function TaskDetailPage({
               <h2 className="text-sm font-black uppercase tracking-widest text-slate-900 mb-6">Task Lifecycle</h2>
               <StatusTransition taskId={task._id.toString()} currentStatus={task.status as TaskStatus} />
             </section>
+
+            {/* Operational Controls */}
+            {task.status !== "completed" && task.status !== "cancelled" && (
+              <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+                <h2 className="text-sm font-black uppercase tracking-widest text-slate-900 mb-2">Operational Controls</h2>
+                <p className="mb-5 text-sm text-slate-500">Reassign ownership, escalate, flag a blocker, set a deadline, or recover stalled work.</p>
+                <TaskOpsControls
+                  taskId={task._id.toString()}
+                  status={task.status}
+                  assignedTo={task.assignedTo}
+                  overdue={overdue}
+                />
+              </section>
+            )}
 
             {/* Core Details */}
             <div className="grid gap-6 md:grid-cols-2">
@@ -198,6 +236,53 @@ export default async function TaskDetailPage({
                     {task.assignedTo || "Unassigned"}
                   </p>
                 </div>
+
+                <div>
+                  <div className="flex items-center gap-2 text-slate-400 mb-1">
+                    <Timer size={14} weight="bold" />
+                    <p className="text-[10px] font-black uppercase tracking-widest">Deadline</p>
+                  </div>
+                  {task.dueAt ? (
+                    <p className={cn("font-black uppercase tracking-tight", overdue ? "text-rose-600" : "text-slate-900")}>
+                      {new Date(task.dueAt).toLocaleString()}
+                      {due && <span className="ml-1 normal-case">({due})</span>}
+                    </p>
+                  ) : (
+                    <p className="font-black text-slate-400 uppercase tracking-tight">No deadline set</p>
+                  )}
+                </div>
+
+                {escalationLevel > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 text-orange-400 mb-1">
+                      <Warning size={14} weight="bold" />
+                      <p className="text-[10px] font-black uppercase tracking-widest">Escalation</p>
+                    </div>
+                    <p className="font-black text-orange-600 uppercase tracking-tight">Level {escalationLevel}</p>
+                  </div>
+                )}
+
+                {task.status === "blocked" && task.blockedReason && (
+                  <div className="rounded-2xl border border-rose-100 bg-rose-50/60 p-4">
+                    <div className="flex items-center gap-2 text-rose-500 mb-1.5">
+                      <Prohibit size={14} weight="bold" />
+                      <p className="text-[10px] font-black uppercase tracking-widest">Blocker</p>
+                    </div>
+                    <p className="text-sm font-medium leading-relaxed text-rose-900/80">{task.blockedReason}</p>
+                  </div>
+                )}
+
+                {task.assignmentReason && (
+                  <div className="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4">
+                    <div className="flex items-center gap-2 text-indigo-500 mb-1.5">
+                      <Sparkle size={14} weight="fill" />
+                      <p className="text-[10px] font-black uppercase tracking-widest">Why This Assignee</p>
+                    </div>
+                    <p className="text-sm font-medium leading-relaxed text-indigo-900/80 normal-case">
+                      {task.assignmentReason}
+                    </p>
+                  </div>
+                )}
 
                 <div className="pt-4">
                   <div className="rounded-2xl bg-slate-900 p-6 text-white text-center">

@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 
 interface Contact {
   id: string;
@@ -27,8 +28,19 @@ interface Contact {
   avatarUrl?: string;
 }
 
+type CategoryFilter = "all" | Contact["roleCategory"];
+
+const CATEGORY_FILTERS: { value: CategoryFilter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "organizer", label: "Organizers" },
+  { value: "volunteer", label: "Volunteers" },
+  { value: "sponsor", label: "Sponsors" },
+  { value: "speaker", label: "Speakers" },
+];
+
 export default function VolunteerDirectoryPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [category, setCategory] = useState<CategoryFilter>("all");
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -124,13 +136,22 @@ export default function VolunteerDirectoryPage() {
     fetchAllContacts();
   }, []);
 
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: contacts.length };
+    for (const c of contacts) counts[c.roleCategory] = (counts[c.roleCategory] ?? 0) + 1;
+    return counts;
+  }, [contacts]);
+
   const filteredContacts = useMemo(() => {
+    const q = searchQuery.toLowerCase();
     return contacts.filter(
       (contact) =>
-        contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        contact.role.toLowerCase().includes(searchQuery.toLowerCase())
+        (category === "all" || contact.roleCategory === category) &&
+        (contact.name.toLowerCase().includes(q) ||
+          contact.role.toLowerCase().includes(q) ||
+          contact.email.toLowerCase().includes(q))
     );
-  }, [searchQuery, contacts]);
+  }, [searchQuery, category, contacts]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -182,14 +203,45 @@ export default function VolunteerDirectoryPage() {
         )}
       </header>
 
-      <div className="relative max-w-md">
-        <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-        <Input
-          placeholder="Search by name or role..."
-          className="pl-10"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
+      <div className="flex flex-col gap-4">
+        <div className="relative max-w-md">
+          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+          <Input
+            placeholder="Search by name, role, or email..."
+            className="pl-10"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {CATEGORY_FILTERS.map((f) => {
+            const active = category === f.value;
+            const count = categoryCounts[f.value] ?? 0;
+            return (
+              <button
+                key={f.value}
+                onClick={() => setCategory(f.value)}
+                className={cn(
+                  "inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-semibold transition-all",
+                  active
+                    ? "border-indigo-600 bg-indigo-600 text-white shadow-sm"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:text-indigo-600"
+                )}
+              >
+                {f.label}
+                <span
+                  className={cn(
+                    "rounded-full px-1.5 text-xs font-bold tabular-nums",
+                    active ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
+                  )}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {isLoading ? (
@@ -288,9 +340,11 @@ export default function VolunteerDirectoryPage() {
                         <span className="text-[10px]">Call</span>
                       </a>
                     </Button>
-                    <Button variant="outline" size="sm" className="w-full flex flex-col h-auto py-2 gap-1">
-                      <ChatCircleText size={18} />
-                      <span className="text-[10px]">Discuss</span>
+                    <Button variant="outline" size="sm" className="w-full flex flex-col h-auto py-2 gap-1" asChild>
+                      <a href={`mailto:${contact.email}?subject=${encodeURIComponent("Event coordination")}`}>
+                        <ChatCircleText size={18} />
+                        <span className="text-[10px]">Discuss</span>
+                      </a>
                     </Button>
                   </div>
                 </CardContent>

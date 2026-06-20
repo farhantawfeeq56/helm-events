@@ -3,6 +3,8 @@ import { connectToDatabase } from "@/lib/db";
 import { Volunteer } from "@/models/volunteer";
 import { logActivity } from "@/lib/activity-logger";
 import { getPaginatedResponse } from "@/lib/utils";
+import { validateVolunteer } from "@/lib/validation/integrity";
+import { errorResponse } from "@/lib/validation/errors";
 
 export async function GET(request: Request) {
   try {
@@ -23,6 +25,7 @@ export async function POST(request: Request) {
   try {
     await connectToDatabase();
     const payload = await request.json();
+    await validateVolunteer(payload);
     const volunteer = await Volunteer.create(payload);
 
     await logActivity({
@@ -35,12 +38,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, data: volunteer }, { status: 201 });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Unable to create volunteer.";
-
-    return NextResponse.json(
-      { success: false, error: message },
-      { status: 400 }
-    );
+    return errorResponse(error);
   }
 }

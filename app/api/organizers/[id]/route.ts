@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { Organizer } from "@/models/organizer";
 import { logActivity } from "@/lib/activity-logger";
+import { validateOrganizer } from "@/lib/validation/integrity";
+import { errorResponse } from "@/lib/validation/errors";
 
 export async function GET(
   request: Request,
@@ -34,16 +36,21 @@ export async function PATCH(
     await connectToDatabase();
     const { id } = await params;
     const payload = await request.json();
-    const organizer = await Organizer.findByIdAndUpdate(id, payload, {
-      new: true,
-      runValidators: true,
-    });
-    if (!organizer) {
+
+    const existing = await Organizer.findById(id);
+    if (!existing) {
       return NextResponse.json(
         { success: false, error: "Organizer not found" },
         { status: 404 }
       );
     }
+    await validateOrganizer(payload, { id, existing: existing.toObject() });
+
+    const organizer = await Organizer.findByIdAndUpdate(id, payload, {
+      new: true,
+      runValidators: true,
+      context: "query",
+    });
 
     await logActivity({
       user: "Admin",
@@ -55,10 +62,7 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, data: organizer });
   } catch (error) {
-    return NextResponse.json(
-      { success: false, error: "Failed to update organizer" },
-      { status: 400 }
-    );
+    return errorResponse(error);
   }
 }
 

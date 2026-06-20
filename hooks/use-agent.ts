@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Message } from "@/types/agent";
+import { Message, AssignmentResult } from "@/types/agent";
 import { HermesSSEEvent, RecommendedAction } from "@/lib/hermes";
 
 export function useAgent(role: string = "operations") {
@@ -59,6 +59,7 @@ export function useAgent(role: string = "operations") {
             incidentData: data.type === "operational-card" ? data.incidentData : undefined,
             checklist: data.type === "execution-checklist" ? data.checklist : undefined,
             reportData: data.type === "issue-report" ? data.reportData : undefined,
+            questions: data.type === "clarification" ? data.questions : undefined,
           };
 
           // Persist agent-created incidents to localStorage so the detail page can find them
@@ -150,12 +151,82 @@ export function useAgent(role: string = "operations") {
         content: `EXECUTION COMMENCED: ${approvedAction?.title.toUpperCase() ?? "ACTION " + actionId}. STATUS TRACKING ACTIVE.`,
         type: "execution-checklist",
         checklist: approvedAction?.steps ?? [{ text: "Executing strategy", status: "in-progress" }],
+        // Once assign-plan creates the linked tasks below, the monitor polls
+        // this incident for real field progress instead of the static snapshot.
+        incidentSlug: incidentMsg?.incidentData?.id,
       };
 
       return [...newMessages, checklist];
     });
 
     if (!approvedAction) return;
+
+    // 1b. Persist the decision and dispatch the plan as real, assigned tasks.
+    //
+    // The approval goes through the SAME endpoint the dedicated incident page
+    // uses (`/api/incidents/[id]/approve`). That endpoint marks the chosen
+    // option on the incident's `analysis.responseOptions` AND dispatches via the
+    // shared engine — so once the operator approves here, the incident page
+    // shows only this active response and can't approve a conflicting option.
+    // Falls back to a plain dispatch if the incident isn't persisted yet.
+    try {
+      const slug = incidentMsg?.incidentData?.id;
+      type DispatchResult = {
+        success?: boolean;
+        count?: number;
+        dispatched?: number;
+        assignments?: Array<{ title: string; assignee: string; reason?: string }>;
+      };
+      let data: DispatchResult | null = null;
+
+      if (slug) {
+        const res = await fetch(`/api/incidents/${encodeURIComponent(slug)}/approve`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ optionId: actionId }),
+        });
+        if (res.ok) data = await res.json();
+      }
+
+      // No persisted incident (or the approve call failed): dispatch directly so
+      // chat still produces tasks.
+      if (!data?.success) {
+        const res = await fetch("/api/tasks/assign-plan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            incidentSlug: slug,
+            planTitle: approvedAction.title,
+            steps: approvedAction.steps ?? [],
+            priority: approvedAction.priority,
+          }),
+        });
+        data = await res.json();
+      }
+
+      const count = data?.dispatched ?? data?.count ?? 0;
+      if (data?.success && count > 0) {
+        const assignments: AssignmentResult[] = Array.isArray(data.assignments)
+          ? data.assignments.map((a) => ({
+              title: a.title,
+              assignee: a.assignee,
+              reason: a.reason ?? "",
+            }))
+          : [];
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: (Date.now() + 5).toString(),
+            role: "agent",
+            content: `${count} task${count > 1 ? "s" : ""} dispatched to best-fit responders.`,
+            type: "assignment",
+            assignments,
+          },
+        ]);
+      }
+    } catch {
+      // Non-fatal: execution still proceeds even if task creation fails.
+    }
 
     // 2. Call Hermes for live execution confirmation and next steps
     setIsTyping(true);
@@ -170,7 +241,14 @@ export function useAgent(role: string = "operations") {
       ].join("\n");
 
       await streamFromHermes(executionPrompt, (msg) => {
-        setMessages((prev) => [...prev, msg]);
+        // Tie the Execution Monitor to this incident so it polls real task
+        // progress (the dispatched tasks are linked to it) instead of showing a
+        // one-time snapshot.
+        const enriched: Message =
+          msg.type === "execution-checklist"
+            ? { ...msg, incidentSlug: incidentMsg?.incidentData?.id }
+            : msg;
+        setMessages((prev) => [...prev, enriched]);
       });
     } catch (error) {
       console.error("Execution call failed:", error);

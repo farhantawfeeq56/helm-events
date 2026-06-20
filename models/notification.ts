@@ -15,6 +15,8 @@ const notificationSchema = new Schema(
         "task_updated",
         "task_escalated",
         "task_completed",
+        "task_blocked",
+        "task_recovered",
         "incident_assigned",
         "system_alert",
         "general",

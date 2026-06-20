@@ -9,6 +9,12 @@ import { Volunteer } from "@/models/volunteer";
 import { Attendee } from "@/models/attendee";
 import { Organizer } from "@/models/organizer";
 import { Facility } from "@/models/facility";
+import { Shift } from "@/models/shift";
+import { Incident } from "@/models/incident";
+import { IncidentMessage } from "@/models/incident-message";
+import { Task } from "@/models/task";
+import { MetricSnapshot } from "@/models/metric-snapshot";
+import { computeEventMetrics } from "@/lib/services/metrics-service";
 import { logActivity } from "@/lib/activity-logger";
 import mongoose from "mongoose";
 
@@ -48,6 +54,11 @@ export async function POST(req: NextRequest) {
         Attendee.deleteMany({}),
         Organizer.deleteMany({}),
         Facility.deleteMany({}),
+        Shift.deleteMany({}),
+        Incident.deleteMany({}),
+        IncidentMessage.deleteMany({}),
+        Task.deleteMany({}),
+        MetricSnapshot.deleteMany({}),
       ]);
     }
 
@@ -79,7 +90,7 @@ export async function POST(req: NextRequest) {
         role: getRandomItem(["Lead Coordinator", "Logistics Manager", "Speaker Liaison", "Sponsorship Director", "Attendee Experience"]),
       };
     });
-    await Organizer.insertMany(organizersData);
+    const organizers = await Organizer.insertMany(organizersData);
 
     // 3. Create Facilities
     const facilities = await Facility.insertMany([
@@ -157,7 +168,40 @@ export async function POST(req: NextRequest) {
         status: "Active",
       };
     });
-    await Volunteer.insertMany(volunteersData);
+    const volunteers = await Volunteer.insertMany(volunteersData);
+
+    // 7b. Create real Shift records for each volunteer, anchored to the event day
+    // and their roster slot — so the shift system is populated from live data.
+    const SHIFT_WINDOWS: Record<string, { start: string; end: string }> = {
+      Morning: { start: "08:00", end: "12:00" },
+      Afternoon: { start: "12:00", end: "17:00" },
+      "Full Day": { start: "08:00", end: "17:00" },
+    };
+    const ROLE_LOCATIONS: Record<string, string> = {
+      "Registration Desk": "Main Lobby — Registration",
+      "Room Monitor": "Breakout Rooms",
+      "Information Booth": "Central Concourse",
+      "Technical Support": "AV Control Room",
+    };
+    const eventDateISO = new Date(event.startDate).toISOString().slice(0, 10);
+    const shiftsData = volunteers.map((v) => {
+      const label = (v as { shift?: string }).shift || "Morning";
+      const role = (v as { role?: string }).role || "General Support";
+      const window = SHIFT_WINDOWS[label] || SHIFT_WINDOWS.Morning;
+      return {
+        eventId,
+        title: `${role} — ${label}`,
+        description: `${label} shift covering ${role.toLowerCase()} duties.`,
+        location: ROLE_LOCATIONS[role] || "Event Floor",
+        role,
+        date: eventDateISO,
+        startTime: window.start,
+        endTime: window.end,
+        assignedTo: (v as { fullName: string }).fullName,
+        status: "scheduled",
+      };
+    });
+    await Shift.insertMany(shiftsData);
 
     // 8. Create Attendees
     // For large sizes, we should use a more efficient way to insert if possible, 
@@ -206,6 +250,150 @@ export async function POST(req: NextRequest) {
       };
     });
     await Session.insertMany(sessionsData);
+
+    // 10. Create operational incidents (mix of resolved/active, manual/Hermes,
+    // some acknowledged) so the incident workspace AND resolution analytics have
+    // real history. Resolved incidents' reportedAt → now spread gives real MTTR.
+    const now = Date.now();
+    const volNames = volunteers.map((v) => (v as { fullName: string }).fullName);
+    const incidentSeeds = [
+      { type: "Crowd Flow", title: "Registration Queue Overcrowding", severity: "high", status: "resolved", source: "hermes", minsAgo: 65, acks: 2, description: "Long queues at the main entrance after a badge-scanner slowdown. Manual check-in started, then scanners restored." },
+      { type: "AV", title: "Projector Flickering in Hall B", severity: "medium", status: "resolved", source: "hermes", minsAgo: 40, acks: 1, description: "Intermittent projector signal during the Hall B workshop. Backup unit deployed." },
+      { type: "Security", title: "Unattended Bag — Concourse", severity: "high", status: "investigating", source: "manual", minsAgo: 8, acks: 1, description: "Unattended bag reported near the central concourse. Security sweep underway." },
+      { type: "Facilities", title: "HVAC Warm in Room C", severity: "low", status: "resolved", source: "manual", minsAgo: 95, acks: 0, description: "Room C reported warm; portable cooling deployed and temperature normalized." },
+      { type: "Crowd Flow", title: "Bottleneck at Hall A Doors", severity: "medium", status: "open", source: "hermes", minsAgo: 4, acks: 0, description: "Congestion building at Hall A entry between sessions." },
+      { type: "Medical", title: "Attendee Fainted — Lobby", severity: "high", status: "resolved", source: "manual", minsAgo: 30, acks: 3, description: "Attendee fainted in the lobby; first aid administered, attendee recovered." },
+      { type: "AV", title: "Mic Dropout — Main Stage", severity: "low", status: "mitigated", source: "hermes", minsAgo: 18, acks: 1, description: "Wireless mic dropouts on the main stage; switched to backup channel." },
+    ];
+    const incidentDocs = await Incident.insertMany(
+      incidentSeeds.map((s, idx) => {
+        const reportedAt = new Date(now - s.minsAgo * 60_000);
+        return {
+          eventId,
+          type: s.type,
+          title: s.title,
+          severity: s.severity,
+          description: s.description,
+          status: s.status,
+          source: s.source,
+          reportedAt,
+          acknowledgedBy: Array.from({ length: s.acks }).map((_, a) => ({
+            name: volNames[(idx * 2 + a) % volNames.length] || "Volunteer",
+            role: "volunteer",
+            at: new Date(reportedAt.getTime() + (a + 1) * 4 * 60_000),
+          })),
+        };
+      }),
+    );
+
+    // 10a. Create tasks across volunteers/incidents with a realistic status mix.
+    // Completed tasks carry back-dated timestamps so execution-time analytics are
+    // meaningful. Inserted via the native driver to control createdAt/updatedAt.
+    const orgNames = organizers.map((o) => (o as { fullName: string }).fullName);
+    const TASK_TITLES = [
+      "Cordon off the affected zone", "Redirect attendee flow", "Deploy backup AV unit",
+      "Escort medical team to location", "Restock registration supplies", "Verify exit routes",
+      "Coordinate with venue security", "Update digital signage", "Sweep the concourse",
+      "Confirm speaker readiness", "Reset the badge scanners", "Stage additional staff",
+    ];
+    // Force a slice of the seed set into ops states (blocked / escalated / overdue)
+    // so the Task Operations board and attention feed always have live signal.
+    const BLOCKER_REASONS = [
+      "Vendor hasn't delivered the crowd barriers; can't close the perimeter.",
+      "Waiting on venue security to unlock the loading dock.",
+      "Backup AV unit is missing its power cable — sourcing a replacement.",
+    ];
+    const tasksRaw = Array.from({ length: 26 }).map((_, i) => {
+      const r = Math.random();
+      let status = r < 0.5 ? "completed" : r < 0.75 ? "in-progress" : "open";
+      const createdMinsAgo = 30 + Math.floor(Math.random() * 180);
+      const createdAt = new Date(now - createdMinsAgo * 60_000);
+      const execMins = 10 + Math.floor(Math.random() * 80);
+      let priority = getRandomItem(["low", "medium", "high"]);
+      let blockedReason = "";
+      let escalationLevel = 0;
+      let dueAt: Date | undefined;
+
+      if (i < 2) {
+        // Blocked work, organizer notified, deadline already slipped.
+        status = "blocked";
+        blockedReason = BLOCKER_REASONS[i % BLOCKER_REASONS.length];
+        dueAt = new Date(now - (20 + i * 15) * 60_000);
+      } else if (i < 4) {
+        // Escalated, high-priority, overdue.
+        status = "escalated";
+        priority = "high";
+        escalationLevel = i === 2 ? 1 : 2;
+        dueAt = new Date(now - (35 + i * 10) * 60_000);
+      } else if (i < 8 && status !== "completed") {
+        // Plain overdue: active task whose deadline has passed.
+        dueAt = new Date(now - (10 + i * 7) * 60_000);
+      } else if (status !== "completed") {
+        // Healthy active work with an upcoming deadline.
+        dueAt = new Date(now + (20 + Math.floor(Math.random() * 120)) * 60_000);
+      }
+
+      const updatedAt = status === "completed" ? new Date(createdAt.getTime() + execMins * 60_000) : createdAt;
+      const inc = incidentDocs[i % incidentDocs.length] as { _id: unknown };
+      return {
+        _id: new mongoose.Types.ObjectId(),
+        eventId: event._id,
+        incidentId: i % 3 === 0 ? inc._id : undefined,
+        title: TASK_TITLES[i % TASK_TITLES.length],
+        description: "",
+        status,
+        priority,
+        location: "",
+        objective: "",
+        expectedOutcome: "",
+        assignedTo: volNames[i % volNames.length] || "",
+        assignedBy: orgNames[i % orgNames.length] || "Operations",
+        assignmentReason: "",
+        dueAt,
+        blockedReason,
+        escalationLevel,
+        createdAt,
+        updatedAt,
+        __v: 0,
+      };
+    });
+    await mongoose.connection.db!.collection("tasks").insertMany(tasksRaw);
+
+    // 10b. A few coordination messages from volunteers on active incidents.
+    const activeIncidents = incidentDocs.filter((i) => ["open", "investigating", "mitigated"].includes((i as { status: string }).status));
+    await IncidentMessage.insertMany(
+      activeIncidents.slice(0, 3).flatMap((inc, idx) => [
+        { incidentId: (inc as { _id: unknown })._id, sender: { id: "v", name: volNames[idx] || "Volunteer", role: "volunteer" }, content: "On scene, assessing now." },
+        { incidentId: (inc as { _id: unknown })._id, sender: { id: "v2", name: volNames[idx + 3] || "Volunteer", role: "volunteer" }, content: "Need one more hand here." },
+      ]),
+    );
+
+    // 11. Seed historical metric snapshots so performance trends render from the
+    // start. The latest point equals the real current metrics; earlier points
+    // taper to a plausible "operation warming up" trajectory. Real snapshots
+    // accrue from live activity thereafter.
+    const current = await computeEventMetrics(eventId);
+    const points = 12;
+    const snapshots = Array.from({ length: points }).map((_, i) => {
+      const f = i / (points - 1); // 0 (oldest) → 1 (now)
+      const lerp = (start: number, end: number) => Math.round(start + (end - start) * f);
+      return {
+        eventId,
+        capturedAt: new Date(now - (points - 1 - i) * 60 * 60 * 1000),
+        source: "auto" as const,
+        trigger: "seed",
+        metrics: {
+          ...current,
+          incidentsActive: lerp(current.incidentsActive + 3, current.incidentsActive),
+          incidentsOpen: lerp(current.incidentsOpen + 2, current.incidentsOpen),
+          incidentResolutionRate: lerp(Math.max(0, current.incidentResolutionRate - 25), current.incidentResolutionRate),
+          taskCompletionRate: lerp(Math.max(0, current.taskCompletionRate - 30), current.taskCompletionRate),
+          operationalReadiness: lerp(Math.max(0, current.operationalReadiness - 22), current.operationalReadiness),
+          actionsLastHour: Math.max(0, Math.round(3 + Math.sin(i) * 2)),
+        },
+      };
+    });
+    await MetricSnapshot.insertMany(snapshots);
 
     await logActivity({
       user: "System",

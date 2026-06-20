@@ -10,6 +10,10 @@ import {
   Bell,
   AddressBook,
   SignOut,
+  Gauge,
+  ChartLineUp,
+  ListChecks,
+  Heartbeat,
 } from "@phosphor-icons/react";
 import {
   Sidebar,
@@ -31,6 +35,10 @@ const organizerItems = [
   { title: "Agent", url: "/agent", icon: User },
   { title: "Incidents", url: "/incidents", icon: WarningOctagon },
   { title: "Event data", url: "/operations", icon: Database },
+  { title: "Health", url: "/operations/health", icon: Heartbeat },
+  { title: "Task Ops", url: "/operations/task-operations", icon: ListChecks },
+  { title: "Metrics", url: "/operations/metrics", icon: Gauge },
+  { title: "Analytics", url: "/operations/analytics", icon: ChartLineUp },
 ];
 
 const volunteerItems = [

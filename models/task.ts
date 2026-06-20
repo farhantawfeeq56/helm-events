@@ -55,10 +55,33 @@ const taskSchema = new Schema(
       trim: true,
       default: "",
     },
+    // Plain-English rationale for why this person was selected, produced by the
+    // intelligent assignment engine. Surfaced in the task detail views.
+    assignmentReason: {
+      type: String,
+      trim: true,
+      default: "",
+    },
     priority: {
       type: String,
       enum: ["low", "medium", "high"],
       default: "medium",
+    },
+    // Deadline for execution. Drives overdue / delayed-execution detection.
+    dueAt: {
+      type: Date,
+    },
+    // Why a task is blocked (set when status → blocked, cleared on recovery).
+    blockedReason: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    // How many times this task has been escalated (0 = never).
+    escalationLevel: {
+      type: Number,
+      default: 0,
+      min: 0,
     },
   },
   {

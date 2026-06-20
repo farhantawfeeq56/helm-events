@@ -6,7 +6,8 @@ import { getPaginatedResponse } from "@/lib/utils";
 export async function GET(request: Request) {
   try {
     await connectToDatabase();
-    return getPaginatedResponse(Activity, request, {}, ["user", "action", "target", "details"]);
+    // Login events are operational noise — never surface them in the activity feed.
+    return getPaginatedResponse(Activity, request, { action: { $ne: "login" } }, ["user", "action", "target", "details"]);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unable to fetch activities.";

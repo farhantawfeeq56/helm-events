@@ -3,7 +3,6 @@ import { connectToDatabase } from "@/lib/db";
 import { Organizer } from "@/models/organizer";
 import { Volunteer } from "@/models/volunteer";
 import { createSessionToken, SESSION_COOKIE, SESSION_MAX_AGE, type Role } from "@/lib/auth/session";
-import { logActivity } from "@/lib/activity-logger";
 
 const DEFAULT_PASSWORD = "Test@123";
 
@@ -68,14 +67,7 @@ export async function POST(request: Request) {
       maxAge: SESSION_MAX_AGE,
     });
 
-    await logActivity({
-      user: name,
-      type: "human",
-      action: "login",
-      target: role,
-      details: `${role} signed in (${normalizedEmail})`,
-    }).catch(() => {});
-
+    // Intentionally not logged to the activity feed — logins are not operational events.
     return response;
   } catch {
     return NextResponse.json({ success: false, error: "Login failed. Please try again." }, { status: 500 });

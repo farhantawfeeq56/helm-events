@@ -60,7 +60,7 @@ export default async function IncidentDetailPage({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 px-6 py-10 text-slate-900">
+    <div className="min-h-[calc(100vh-4rem)] bg-slate-50 px-6 py-10 text-slate-900">
       <div className="mx-auto w-full max-w-7xl space-y-8">
         <Link
           href="/incidents"
@@ -92,7 +92,11 @@ export default async function IncidentDetailPage({
             
             <Situation situation={incident.situation} />
 
-            <ResponseOptions options={incident.responseOptions} />
+            <ResponseOptions
+              options={incident.responseOptions}
+              incidentId={incident.id}
+              executionStatus={incident.executionStatus}
+            />
 
             <Impact 
               affectedResources={incident.affectedResources} 

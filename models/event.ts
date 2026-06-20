@@ -38,7 +38,10 @@ const eventSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ["planning", "confirmed", "live", "completed"],
+      enum: {
+        values: ["planning", "confirmed", "live", "completed", "cancelled"],
+        message: "Status must be one of: planning, confirmed, live, completed, cancelled.",
+      },
       default: "planning",
     },
   },
@@ -46,6 +49,15 @@ const eventSchema = new Schema(
     timestamps: true,
   },
 );
+
+// An event can't end before it starts.
+eventSchema.pre("validate", function (next) {
+  const doc = this as unknown as { startDate?: Date; endDate?: Date };
+  if (doc.startDate && doc.endDate && new Date(doc.endDate).getTime() < new Date(doc.startDate).getTime()) {
+    this.invalidate("endDate", "End date cannot be before the start date.");
+  }
+  next();
+});
 
 export type EventDocument = InferSchemaType<typeof eventSchema>;
 

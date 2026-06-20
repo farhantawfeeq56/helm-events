@@ -162,8 +162,12 @@ export function CollectionView<T extends { _id: string; id?: string }>({
       if (result.success) {
         await fetchData(pagination.page, debouncedSearchTerm);
       } else {
-        alert(result.error || "Failed to save record");
-        throw new Error(result.error);
+        // Surface the server's validation message + per-field errors in the dialog.
+        const err = new Error(result.error || "Failed to save record") as Error & {
+          fieldErrors?: Record<string, string>;
+        };
+        err.fieldErrors = result.fieldErrors;
+        throw err;
       }
     } catch (error) {
       console.error("Failed to save record:", error);

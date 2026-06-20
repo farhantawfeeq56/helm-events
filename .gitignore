@@ -44,3 +44,5 @@ next-env.d.ts
 bridge-cf/dist/
 bridge-cf/*.zip
 bridge-cf/node_modules/
+
+.serena/

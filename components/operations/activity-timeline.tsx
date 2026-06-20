@@ -134,7 +134,7 @@ export function ActivityTimeline({ target }: ActivityTimelineProps) {
               {activity.details && (
                 <div className="bg-slate-50 rounded-lg p-3 text-xs text-slate-600 flex items-start gap-2 border border-slate-100">
                   <Info size={14} className="shrink-0 mt-0.5 text-slate-400" />
-                  <span className="leading-relaxed">{activity.details}</span>
+                  <span className="leading-relaxed line-clamp-2">{activity.details}</span>
                 </div>
               )}
             </Card>

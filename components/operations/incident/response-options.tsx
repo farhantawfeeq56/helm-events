@@ -1,17 +1,59 @@
 "use client";
 
-import { CheckCircle, Circle, ArrowRight } from "@phosphor-icons/react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { CheckCircle, Circle, ArrowRight, CircleNotch } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { RecommendedAction } from "@/lib/hermes";
+import { ActiveResponse } from "./active-response";
 
 interface ResponseOptionsProps {
   options?: RecommendedAction[];
+  /** Incident slug/id — enables the live Approve flow when present. */
+  incidentId?: string;
+  /** Current execution headline, shown by the active-response view. */
+  executionStatus?: string;
 }
 
-export function ResponseOptions({ options }: ResponseOptionsProps) {
+export function ResponseOptions({ options, incidentId, executionStatus }: ResponseOptionsProps) {
+  const router = useRouter();
+  const [pendingId, setPendingId] = useState<number | null>(null);
+
   if (!options || options.length === 0) return null;
+
+  // Once an option is approved/modified, show only the active response.
+  const active = options.find((o) => o.status === "approved" || o.status === "modified");
+  if (active && incidentId) {
+    return (
+      <ActiveResponse
+        incidentId={incidentId}
+        option={active}
+        executionStatus={executionStatus || "Response approved — dispatching tasks."}
+      />
+    );
+  }
+
+  const approve = async (optionId: number) => {
+    if (!incidentId || pendingId !== null) return;
+    setPendingId(optionId);
+    try {
+      const res = await fetch(`/api/incidents/${encodeURIComponent(incidentId)}/approve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ optionId }),
+      });
+      if (res.ok) {
+        // Re-render the server component so the page swaps to the active view.
+        router.refresh();
+      } else {
+        setPendingId(null);
+      }
+    } catch {
+      setPendingId(null);
+    }
+  };
 
   return (
     <section>
@@ -29,23 +71,34 @@ export function ResponseOptions({ options }: ResponseOptionsProps) {
                 <div className="flex items-center gap-2">
                   <Badge className={cn(
                     "text-[10px] font-black uppercase tracking-widest px-2 py-0.5",
-                    option.priority === "high" ? "bg-rose-100 text-rose-700" : 
+                    option.priority === "high" ? "bg-rose-100 text-rose-700" :
                     option.priority === "medium" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"
                   )}>
                     {option.priority} Priority
                   </Badge>
-                  {option.status === "approved" && (
-                    <Badge className="bg-emerald-100 text-emerald-700 text-[10px] font-black uppercase tracking-widest px-2 py-0.5">
-                      Approved
-                    </Badge>
-                  )}
                 </div>
                 <h3 className="text-2xl font-black text-slate-900 tracking-tight">{option.title}</h3>
               </div>
-              <Button size="sm" className="bg-slate-900 text-white hover:bg-slate-800 rounded-xl font-bold uppercase tracking-widest text-xs h-10 px-6">
-                Approve Action
-                <ArrowRight weight="bold" className="ml-2" />
-              </Button>
+              {incidentId && (
+                <Button
+                  size="sm"
+                  onClick={() => approve(option.id)}
+                  disabled={pendingId !== null}
+                  className="bg-slate-900 text-white hover:bg-slate-800 rounded-xl font-bold uppercase tracking-widest text-xs h-10 px-6 disabled:opacity-60"
+                >
+                  {pendingId === option.id ? (
+                    <>
+                      Approving
+                      <CircleNotch weight="bold" className="ml-2 animate-spin" />
+                    </>
+                  ) : (
+                    <>
+                      Approve Action
+                      <ArrowRight weight="bold" className="ml-2" />
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
 
             <p className="text-slate-600 font-medium leading-relaxed mb-8">
