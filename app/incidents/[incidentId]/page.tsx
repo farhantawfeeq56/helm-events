@@ -60,7 +60,7 @@ export default async function IncidentDetailPage({
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-slate-50 px-6 py-10 text-slate-900">
+    <div className="min-h-[calc(100dvh-4rem)] bg-slate-50 px-4 py-6 sm:px-6 sm:py-10 text-slate-900">
       <div className="mx-auto w-full max-w-7xl space-y-8">
         <Link
           href="/incidents"
@@ -81,12 +81,12 @@ export default async function IncidentDetailPage({
               <span className="uppercase tracking-widest">{incident.status}</span>
             </div>
           </div>
-          <h1 className="text-5xl font-black tracking-tight text-slate-900 leading-none">
+          <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-slate-900 leading-none">
             {incident.title}
           </h1>
         </header>
 
-        <div className="grid gap-8 lg:grid-cols-3 items-start">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3 items-start">
           {/* Main Content - Left Column */}
           <div className="lg:col-span-2 space-y-12">
             
@@ -143,7 +143,7 @@ export default async function IncidentDetailPage({
           <div className="space-y-8 lg:sticky lg:top-8">
             
             {/* Quick Facts Panel */}
-            <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+            <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
               <h2 className="text-sm font-black uppercase tracking-widest text-slate-900 mb-8">Quick Facts</h2>
               <div className="space-y-6">
                 <div>

@@ -212,25 +212,25 @@ export default function AgentPage() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] flex-col bg-slate-50">
+    <div className="flex h-[calc(100dvh-4rem)] flex-col bg-slate-50">
       {/* Top Status Bar */}
-      <div className="flex h-12 items-center justify-between border-b border-slate-200 bg-white px-6">
-        <div className="flex items-center gap-6">
+      <div className="flex h-12 items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-6">
+        <div className="flex items-center gap-3 sm:gap-6">
           <div className="flex items-center gap-2">
             <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">System Live</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="hidden items-center gap-2 sm:flex">
             <Pulse size={14} className="text-slate-400" />
             <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Ops Level: Normal</span>
           </div>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           <div className="flex items-center gap-2 text-slate-400">
             <Clock size={14} />
             <span className="text-[10px] font-black tabular-nums tracking-widest">{formatClockTime(clock)}</span>
           </div>
-          <Badge variant="outline" className="border-slate-200 bg-slate-50 text-[10px] font-bold">
+          <Badge variant="outline" className="hidden border-slate-200 bg-slate-50 text-[10px] font-bold sm:inline-flex">
             v2.0.4-OPERATIONAL
           </Badge>
         </div>
@@ -240,14 +240,14 @@ export default function AgentPage() {
         {/* Main Content Area */}
         <div className="flex flex-1 flex-col overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-fixed">
           <div className="flex-1 overflow-y-auto scroll-smooth">
-            <div className="mx-auto flex min-h-full max-w-4xl flex-col px-6 py-8">
+            <div className="mx-auto flex min-h-full max-w-4xl flex-col px-4 py-6 sm:px-6 sm:py-8">
               {messages.length === 0 ? (
                 <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                   <div className="flex flex-col items-center text-center">
                     <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-[2.5rem] bg-slate-900 text-white shadow-2xl ring-8 ring-slate-100">
                       <Sparkle size={40} weight="fill" className="text-sky-400" />
                     </div>
-                    <h1 className="mb-2 text-4xl font-black tracking-tighter text-slate-900">
+                    <h1 className="mb-2 text-3xl sm:text-4xl font-black tracking-tighter text-slate-900">
                       HERMES<span className="text-sky-600">.OPS</span>
                     </h1>
                     <p className="max-w-md text-lg font-medium text-slate-500 leading-tight">
@@ -328,7 +328,7 @@ export default function AgentPage() {
           </div>
 
           {/* Command Input Area */}
-          <div className="w-full border-t border-slate-200 bg-white/80 p-6 backdrop-blur-xl">
+          <div className="w-full border-t border-slate-200 bg-white/80 p-4 backdrop-blur-xl sm:p-6">
             <div className="mx-auto max-w-4xl">
               <div className="relative flex items-center gap-4 rounded-[2rem] border border-slate-200 bg-white p-2 shadow-2xl transition-all focus-within:border-sky-500 focus-within:ring-8 focus-within:ring-sky-50">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-50 text-slate-400 ml-1">

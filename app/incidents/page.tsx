@@ -35,11 +35,11 @@ export default async function IncidentsPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-slate-50 px-6 py-10 text-slate-900">
+    <div className="min-h-[calc(100dvh-4rem)] bg-slate-50 px-4 py-6 sm:px-6 sm:py-10 text-slate-900">
       <div className="mx-auto w-full max-w-6xl space-y-8">
         <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div className="space-y-1">
-            <h1 className="text-4xl font-black tracking-tight text-slate-900">
+            <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900">
               Incidents
             </h1>
             <p className="text-lg text-slate-500 font-medium">

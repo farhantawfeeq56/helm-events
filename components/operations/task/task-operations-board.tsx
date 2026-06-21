@@ -85,13 +85,13 @@ export function TaskOperationsBoard() {
 
   return (
     <div className="space-y-8">
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <CountCard label="Escalated" value={data.counts.escalated} tone="orange" icon={<Warning weight="bold" />} />
         <CountCard label="Blocked" value={data.counts.blocked} tone="rose" icon={<Prohibit weight="bold" />} />
         <CountCard label="Overdue" value={data.counts.overdue} tone="amber" icon={<Clock weight="bold" />} />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Column title="Escalated" tone="orange" tasks={data.escalated} onChanged={load} />
         <Column title="Blocked" tone="rose" tasks={data.blocked} onChanged={load} />
         <Column title="Overdue" tone="amber" tasks={data.overdue} onChanged={load} />

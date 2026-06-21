@@ -69,7 +69,7 @@ export function AnalyticsExperience() {
   return (
     <div className="space-y-10">
       {/* Headline KPIs */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Kpi icon={<Timer weight="bold" />} tone="indigo" label="Mean Time to Resolve" value={fmtMins(incidents.mttrMins)} sub={`median ${fmtMins(incidents.medianResolveMins)}`} />
         <Kpi icon={<ShieldCheck weight="bold" />} tone="emerald" label="Incident Resolution" value={`${incidents.resolutionRate}%`} sub={`${incidents.resolved}/${incidents.total} resolved`} />
         <Kpi icon={<CheckCircle weight="bold" />} tone="sky" label="Avg Task Execution" value={fmtMins(tasks.avgCompletionMins)} sub={`${tasks.completionRate}% completion`} />
@@ -78,13 +78,13 @@ export function AnalyticsExperience() {
 
       {/* Incident resolution performance */}
       <Section icon={<WarningOctagon weight="bold" />} title="Incident Resolution Performance">
-        <div className="grid gap-4 sm:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
           <MiniStat label="Mean Resolve" value={fmtMins(incidents.mttrMins)} />
           <MiniStat label="Median Resolve" value={fmtMins(incidents.medianResolveMins)} />
           <MiniStat label="Avg Time to Ack" value={fmtMins(incidents.avgAckMins)} />
           <MiniStat label="Acknowledged" value={`${incidents.acknowledgedRate}%`} />
         </div>
-        <div className="mt-6 grid gap-8 lg:grid-cols-2">
+        <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-2">
           <BarGroup title="Mean Time to Resolve, by Severity" rows={incidents.bySeverity.map((s) => ({ label: s.key, value: s.mttrMins, display: fmtMins(s.mttrMins), sub: `${s.resolved}/${s.total} resolved` }))} color={severityColor} unitMax />
           <BarGroup title="Resolution, by Incident Type" rows={incidents.byType.map((s) => ({ label: s.key, value: s.total ? Math.round((s.resolved / s.total) * 100) : 0, display: `${s.total ? Math.round((s.resolved / s.total) * 100) : 0}%`, sub: `${s.resolved}/${s.total} · ${fmtMins(s.mttrMins)}` }))} max={100} />
         </div>
@@ -92,13 +92,13 @@ export function AnalyticsExperience() {
 
       {/* Task execution trends */}
       <Section icon={<CheckCircle weight="bold" />} title="Task Execution Trends">
-        <div className="grid gap-4 sm:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
           <MiniStat label="Completed" value={`${tasks.completed}/${tasks.total}`} />
           <MiniStat label="Completion Rate" value={`${tasks.completionRate}%`} />
           <MiniStat label="Avg Execution" value={fmtMins(tasks.avgCompletionMins)} />
           <MiniStat label="Median" value={fmtMins(tasks.medianCompletionMins)} />
         </div>
-        <div className="mt-6 grid gap-8 lg:grid-cols-2">
+        <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-2">
           <Throughput data={tasks.throughput} />
           <BarGroup
             title="Completion by Priority"
@@ -152,7 +152,7 @@ export function AnalyticsExperience() {
       {/* Hermes effectiveness */}
       <Section icon={<Robot weight="bold" />} title="Hermes Effectiveness">
         <div className="rounded-2xl border border-violet-100 bg-violet-50/40 p-6">
-          <div className="grid gap-6 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
             <div className="flex flex-col items-center justify-center text-center">
               <div className="text-4xl font-black text-violet-700">{hermes.detectionSharePct}%</div>
               <div className="mt-1 text-xs font-bold uppercase tracking-widest text-violet-400">Detection Share</div>

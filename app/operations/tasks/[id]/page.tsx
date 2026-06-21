@@ -63,7 +63,7 @@ export default async function TaskDetailPage({
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-slate-50 px-6 py-10 text-slate-900">
+    <div className="min-h-[calc(100dvh-4rem)] bg-slate-50 px-4 py-6 sm:px-6 sm:py-10 text-slate-900">
       <div className="mx-auto w-full max-w-7xl space-y-8">
         <Link
           href="/operations?collection=tasks"
@@ -99,24 +99,24 @@ export default async function TaskDetailPage({
               </Badge>
             )}
           </div>
-          <h1 className="text-5xl font-black tracking-tight text-slate-900 leading-none">
+          <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-slate-900 leading-none">
             {task.title}
           </h1>
         </header>
 
-        <div className="grid gap-8 lg:grid-cols-3 items-start">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3 items-start">
           {/* Main Content - Left Column */}
           <div className="lg:col-span-2 space-y-8">
             
             {/* Status & Lifecycle */}
-            <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+            <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
               <h2 className="text-sm font-black uppercase tracking-widest text-slate-900 mb-6">Task Lifecycle</h2>
               <StatusTransition taskId={task._id.toString()} currentStatus={task.status as TaskStatus} />
             </section>
 
             {/* Operational Controls */}
             {task.status !== "completed" && task.status !== "cancelled" && (
-              <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+              <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
                 <h2 className="text-sm font-black uppercase tracking-widest text-slate-900 mb-2">Operational Controls</h2>
                 <p className="mb-5 text-sm text-slate-500">Reassign ownership, escalate, flag a blocker, set a deadline, or recover stalled work.</p>
                 <TaskOpsControls
@@ -129,7 +129,7 @@ export default async function TaskDetailPage({
             )}
 
             {/* Core Details */}
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <Card className="p-6 rounded-3xl border-slate-200 shadow-sm">
                 <div className="flex items-center gap-3 mb-4 text-indigo-600">
                   <Target size={20} weight="bold" />
@@ -189,7 +189,7 @@ export default async function TaskDetailPage({
           <div className="space-y-8 lg:sticky lg:top-8">
             
             {/* Context Panel */}
-            <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+            <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
               <h2 className="text-sm font-black uppercase tracking-widest text-slate-900 mb-8">Context</h2>
               <div className="space-y-6">
                 <div>

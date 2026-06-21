@@ -54,7 +54,7 @@ export function LoginForm({ demoOrganizers }: { demoOrganizers: DemoOrganizer[] 
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-950 px-6 py-12 text-slate-100">
+    <div className="flex min-h-dvh items-center justify-center bg-slate-950 px-6 py-12 text-slate-100">
       <div className="w-full max-w-md">
         <div className="mb-10 flex flex-col items-center text-center">
           <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-900 shadow-lg ring-1 ring-slate-700">
@@ -68,7 +68,7 @@ export function LoginForm({ demoOrganizers }: { demoOrganizers: DemoOrganizer[] 
 
         <form
           onSubmit={handleSubmit}
-          className="space-y-5 rounded-3xl border border-slate-800 bg-slate-900/60 p-8 shadow-2xl backdrop-blur"
+          className="space-y-5 rounded-3xl border border-slate-800 bg-slate-900/60 p-5 sm:p-8 shadow-2xl backdrop-blur"
         >
           <div className="space-y-2">
             <label htmlFor="email" className="text-[11px] font-black uppercase tracking-widest text-slate-400">

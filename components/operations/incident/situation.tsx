@@ -15,7 +15,7 @@ export function Situation({ situation }: SituationProps) {
         </div>
         <h2 className="text-sm font-black uppercase tracking-widest text-slate-900">Current Situation</h2>
       </div>
-      <div className="rounded-3xl border-2 border-slate-900 bg-white p-8 shadow-[8px_8px_0px_0px_rgba(15,23,42,1)]">
+      <div className="rounded-3xl border-2 border-slate-900 bg-white p-5 sm:p-8 shadow-[8px_8px_0px_0px_rgba(15,23,42,1)]">
         <p className="text-2xl font-bold text-slate-900 leading-snug">
           {situation}
         </p>

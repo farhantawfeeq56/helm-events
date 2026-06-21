@@ -134,13 +134,13 @@ export default function VolunteerDashboard() {
           <Skeleton className="h-4 w-48" />
         </header>
 
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
             <Skeleton key={i} className="h-32 rounded-xl" />
           ))}
         </div>
 
-        <div className="grid gap-8 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-4">
             <Skeleton className="h-8 w-48" />
             {[1, 2, 3].map((i) => (
@@ -264,7 +264,7 @@ export default function VolunteerDashboard() {
         </Card>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         {/* Task List */}
         <div className="lg:col-span-2 space-y-6">
           <div className="flex items-center justify-between">

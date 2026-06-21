@@ -132,7 +132,7 @@ export default async function OperationsPage({
     const title = titles[collection];
 
     return (
-      <div className="min-h-[calc(100vh-4rem)] bg-slate-50 px-6 py-10 text-slate-900">
+      <div className="min-h-[calc(100dvh-4rem)] bg-slate-50 px-4 py-6 sm:px-6 sm:py-10 text-slate-900">
         <div className="mx-auto w-full max-w-6xl">
           <Link
             href="/operations"
@@ -142,7 +142,7 @@ export default async function OperationsPage({
             Back to Data Hub
           </Link>
 
-          <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+          <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
             {collection === "activities" && view !== "table" ? (
               <div>
                 <div className="flex items-center justify-between mb-8">
@@ -365,11 +365,11 @@ export default async function OperationsPage({
   ];
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.05),_transparent_25%),radial-gradient(circle_at_top_right,_rgba(14,165,233,0.05),_transparent_25%),#f8fafc] px-6 py-10 text-slate-900">
+    <div className="min-h-[calc(100dvh-4rem)] bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.05),_transparent_25%),radial-gradient(circle_at_top_right,_rgba(14,165,233,0.05),_transparent_25%),#f8fafc] px-4 py-6 sm:px-6 sm:py-10 text-slate-900">
       <div className="mx-auto w-full max-w-6xl space-y-12">
         <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div className="space-y-1">
-            <h1 className="text-4xl font-bold tracking-tight text-slate-900">
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900">
               Event Data Hub
             </h1>
             <p className="text-lg text-slate-500">
@@ -386,7 +386,7 @@ export default async function OperationsPage({
 
         {/* Event Overview Section */}
         <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-md">
-          <div className="grid lg:grid-cols-[1fr_auto]">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto]">
             <div className="p-8">
               <div className="mb-6 flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white">
@@ -402,7 +402,7 @@ export default async function OperationsPage({
               {latestEvent ? (
                 <div className="space-y-6">
                   <div>
-                    <h3 className="text-3xl font-bold text-slate-900">
+                    <h3 className="text-2xl sm:text-3xl font-bold text-slate-900">
                       {latestEvent.name}
                     </h3>
                     <div className="mt-2 flex flex-wrap gap-4 text-slate-500">
@@ -484,7 +484,7 @@ export default async function OperationsPage({
                 </div>
               )}
             </div>
-            <div className="hidden border-l border-slate-100 bg-slate-50/50 p-8 lg:block lg:w-80">
+            <div className="hidden border-l border-slate-100 bg-slate-50/50 p-5 sm:p-8 lg:block lg:w-80">
               <h4 className="mb-4 text-xs font-bold uppercase tracking-widest text-slate-400">
                 Quick Actions
               </h4>
@@ -526,7 +526,7 @@ export default async function OperationsPage({
                 </h2>
                 <p className="text-slate-500">{category.description}</p>
               </div>
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {category.items.map((item) => (
                   <Link
                     key={item.id}

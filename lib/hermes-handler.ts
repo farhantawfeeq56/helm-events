@@ -57,6 +57,48 @@ function tryParseHermesJSON(raw: string): HermesResponse | null {
 }
 
 /**
+ * How many times to silently re-issue a request when the live agent returns an
+ * options analysis as prose instead of the structured contract. The bridge LLM
+ * is non-deterministic: the same prompt yields JSON most of the time and prose
+ * occasionally ("works on the 2nd try"). A plain re-send — with the prompt
+ * UNCHANGED — reliably recovers the structured form, so we automate it.
+ */
+const MAX_STRUCTURE_RETRIES = 2;
+
+/**
+ * Heuristic: did the agent hand back an *options analysis* as free-form prose
+ * (the failure mode we see on screen) rather than as the `operational-card`
+ * contract? We only retry on this specific, high-confidence signature so a
+ * legitimate plain-text answer is never needlessly re-issued.
+ *
+ * We trigger ONLY on the two high-confidence signatures of an options analysis
+ * rendered as prose: two+ enumerated options ("Option 1" … "Option 2"), or an
+ * explicit "Response Paths/Options" heading. These are specific to the failure
+ * mode and don't appear in legitimate plain answers — so a normal reply is never
+ * needlessly re-issued against the (slow) live agent. The observed failure (the
+ * screenshot) carries both signatures, so detection is redundant in practice.
+ */
+function looksLikeUnstructuredAnalysis(text: string): boolean {
+  if (!text || text.length < 80) return false;
+  const t = text.toLowerCase();
+  const enumeratedOptions = /option\s*1\b/.test(t) && /option\s*2\b/.test(t);
+  const responsePaths = /response\s+(paths?|options?)/.test(t);
+  return enumeratedOptions || responsePaths;
+}
+
+/**
+ * Normalizes a raw bridge payload: a `text` payload that actually wraps our JSON
+ * (e.g. a ```json fence) is upgraded to the structured form. A genuine prose
+ * reply is left as-is (NOT sanitized yet) so the retry heuristic can inspect it.
+ */
+function normalizePayload(payload: HermesResponse): HermesResponse {
+  if (payload.type === "text") {
+    return tryParseHermesJSON(payload.content) ?? payload;
+  }
+  return payload;
+}
+
+/**
  * Attaches live event data (from MongoDB, via contextService) to the operator's
  * message so the agent can reason over the real schedule and open incidents.
  *
@@ -135,13 +177,31 @@ export async function* streamHermesMessage(
         const event = JSON.parse(raw) as HermesSSEEvent;
 
         if (event.type === "complete") {
-          // If the live agent returned plain text, try to extract structured JSON
-          // from it. If it isn't our contract, sanitize so a stray ```json fence
-          // or bare JSON object is never shown to the operator as raw text.
-          let payload = event.payload;
+          // Upgrade a fenced/bare-JSON `text` payload to the structured contract.
+          let payload = normalizePayload(event.payload);
+
+          // The agent occasionally returns an options analysis as prose instead
+          // of an operational-card. Re-issue the request (prompt UNCHANGED) until
+          // it returns the structured form or we exhaust the retry budget. This
+          // makes the first attempt reliable instead of "works on the 2nd try".
+          let attempts = 0;
+          while (
+            payload.type === "text" &&
+            looksLikeUnstructuredAnalysis(payload.content) &&
+            attempts < MAX_STRUCTURE_RETRIES
+          ) {
+            attempts++;
+            yield {
+              type: "progress",
+              content: attempts === 1 ? "STRUCTURING RESPONSE OPTIONS..." : "FINALIZING ANALYSIS...",
+            };
+            payload = await callBridgeStream(message, role, context);
+          }
+
+          // Still prose after retries: sanitize so a stray fence/JSON is never
+          // shown raw, and deliver it as a plain-text reply.
           if (payload.type === "text") {
-            const structured = tryParseHermesJSON(payload.content);
-            payload = structured ?? { type: "text", content: sanitizeAgentText(payload.content) };
+            payload = { type: "text", content: sanitizeAgentText(payload.content) };
           }
 
           await logActivity({
@@ -149,7 +209,9 @@ export async function* streamHermesMessage(
             type: "agent",
             action: "Response Delivered",
             target: payload.type,
-            details: `Message: "${message.substring(0, 60)}${message.length > 60 ? "..." : ""}"`,
+            details: `Message: "${message.substring(0, 60)}${message.length > 60 ? "..." : ""}"${
+              attempts > 0 ? ` (restructured after ${attempts} retr${attempts > 1 ? "ies" : "y"})` : ""
+            }`,
           });
 
           yield { type: "complete", payload };
@@ -165,6 +227,55 @@ export async function* streamHermesMessage(
 }
 
 /**
+ * One retry call against the streaming bridge: drains the SSE stream and returns
+ * the final, normalized payload (no live progress — the caller emits its own
+ * tick). Reuses the same `/api/chat/stream` endpoint as the primary path so the
+ * retry can't depend on a different, possibly-divergent code path.
+ */
+async function callBridgeStream(
+  message: string,
+  role: string,
+  context?: string | null
+): Promise<HermesResponse> {
+  const res = await fetch(`${HERMES_AGENT_URL}/api/chat/stream`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: buildContextualMessage(message, context), role }),
+  });
+
+  if (!res.ok || !res.body) {
+    return { type: "text", content: `BRIDGE ERROR: HTTP ${res.status}` };
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let final: HermesResponse | null = null;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      if (!line.startsWith("data: ")) continue;
+      const raw = line.slice(6).trim();
+      if (!raw) continue;
+      try {
+        const ev = JSON.parse(raw) as HermesSSEEvent;
+        if (ev.type === "complete") final = ev.payload;
+      } catch {
+        // malformed SSE line — skip
+      }
+    }
+  }
+
+  if (!final) return { type: "text", content: "BRIDGE ERROR: no completion received." };
+  return normalizePayload(final);
+}
+
+/**
  * Non-streaming convenience wrapper. Returns the final HermesResponse.
  * Used by the GCP Cloud Function path which does not support streaming.
  */
@@ -177,6 +288,32 @@ export async function processHermesMessage(
     return processHermesMock(message, role);
   }
 
+  // Same resilience as the streaming path: if the agent emits an options
+  // analysis as prose, re-issue (prompt UNCHANGED) until it returns the
+  // structured contract or the retry budget is spent.
+  let payload = await callBridgeChat(message, role, context);
+  let attempts = 0;
+  while (
+    payload.type === "text" &&
+    looksLikeUnstructuredAnalysis(payload.content) &&
+    attempts < MAX_STRUCTURE_RETRIES
+  ) {
+    attempts++;
+    payload = await callBridgeChat(message, role, context);
+  }
+
+  if (payload.type === "text") {
+    payload = { type: "text", content: sanitizeAgentText(payload.content) };
+  }
+  return payload;
+}
+
+/** One call against the non-streaming bridge endpoint; returns a normalized payload. */
+async function callBridgeChat(
+  message: string,
+  role: string,
+  context?: string | null
+): Promise<HermesResponse> {
   const res = await fetch(`${HERMES_AGENT_URL}/api/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -188,10 +325,7 @@ export async function processHermesMessage(
   }
 
   const payload = (await res.json()) as HermesResponse;
-  if (payload.type === "text") {
-    return tryParseHermesJSON(payload.content) ?? { type: "text", content: sanitizeAgentText(payload.content) };
-  }
-  return payload;
+  return normalizePayload(payload);
 }
 
 // ─── Mock fallback (keyword matching, no LLM) ───────────────────────────────

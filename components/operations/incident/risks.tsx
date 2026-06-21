@@ -17,7 +17,7 @@ export function Risks({ assessment, detailedRisks }: RisksProps) {
   return (
     <div className="space-y-8">
       {/* High-Level Assessment */}
-      <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
         <div className="flex items-center gap-3 mb-8">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500 text-white">
             <WarningCircle size={18} weight="bold" />
@@ -59,7 +59,7 @@ export function Risks({ assessment, detailedRisks }: RisksProps) {
       </section>
 
       {/* Detailed Risks */}
-      {detailedRisks && detailedRisks.length > 0 && <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      {detailedRisks && detailedRisks.length > 0 && <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
         <div className="flex items-center gap-3 mb-8">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-white">
             <TrendUp size={18} weight="bold" />

@@ -37,11 +37,11 @@ export default async function DashboardPage() {
     <div className="p-6">
       <div className="flex flex-col gap-6">
         <header>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-slate-500">Welcome to your event operations console.</p>
         </header>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="text-sm font-medium text-slate-500">Total Events</div>
             <div className="mt-2 text-2xl font-bold">{eventCount}</div>
@@ -68,7 +68,7 @@ export default async function DashboardPage() {
                 View metrics →
               </Link>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div>
                 <div className="text-xs font-bold uppercase tracking-widest text-slate-400">Readiness</div>
                 <div className={`mt-1 text-2xl font-black ${readinessTone}`}>{metrics.operationalReadiness}</div>
@@ -93,7 +93,7 @@ export default async function DashboardPage() {
           </div>
         )}
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-7">
           <div className="col-span-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="font-semibold">Recent Activity</div>
             <div className="mt-4 space-y-4">

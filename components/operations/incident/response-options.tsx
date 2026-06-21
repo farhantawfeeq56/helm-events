@@ -65,7 +65,7 @@ export function ResponseOptions({ options, incidentId, executionStatus }: Respon
       </div>
       <div className="space-y-6">
         {options.map((option) => (
-          <div key={option.id} className="group relative overflow-hidden rounded-3xl border-2 border-slate-900 bg-white p-8 shadow-[6px_6px_0px_0px_rgba(15,23,42,1)] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[4px_4px_0px_0px_rgba(15,23,42,1)]">
+          <div key={option.id} className="group relative overflow-hidden rounded-3xl border-2 border-slate-900 bg-white p-5 sm:p-8 shadow-[6px_6px_0px_0px_rgba(15,23,42,1)] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[4px_4px_0px_0px_rgba(15,23,42,1)]">
             <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
@@ -105,7 +105,7 @@ export function ResponseOptions({ options, incidentId, executionStatus }: Respon
               {option.summary}
             </p>
 
-            <div className="grid md:grid-cols-2 gap-8 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
               <div className="space-y-3">
                 <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600">Pros</h4>
                 <ul className="space-y-2">
@@ -133,7 +133,7 @@ export function ResponseOptions({ options, incidentId, executionStatus }: Respon
             {option.steps && option.steps.length > 0 && (
               <div className="border-t border-slate-100 pt-6">
                 <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4">Execution Checklist</h4>
-                <div className="grid sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {option.steps.map((step, i) => (
                     <div key={i} className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/50 p-3">
                       {step.status === "completed" ? (

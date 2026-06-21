@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 export default function AnalyticsPage() {
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-slate-50 px-6 py-10 text-slate-900">
+    <div className="min-h-[calc(100dvh-4rem)] bg-slate-50 px-4 py-6 sm:px-6 sm:py-10 text-slate-900">
       <div className="mx-auto w-full max-w-6xl space-y-8">
         <Link
           href="/operations"
@@ -21,7 +21,7 @@ export default function AnalyticsPage() {
             <ChartLineUp size={24} weight="bold" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Resolution Analytics</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Resolution Analytics</h1>
             <p className="text-slate-500">Incident resolution, task execution, contribution, and Hermes effectiveness — from real activity.</p>
           </div>
         </header>

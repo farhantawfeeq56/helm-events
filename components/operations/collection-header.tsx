@@ -28,7 +28,7 @@ export function CollectionHeader({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold capitalize tracking-tight text-slate-900">
+            <h1 className="text-2xl sm:text-3xl font-bold capitalize tracking-tight text-slate-900">
               {title}
             </h1>
             <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">

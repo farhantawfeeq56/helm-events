@@ -135,7 +135,7 @@ export default function VolunteerShiftsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {withStatus.map(({ shift, display }) => {
             const config = statusConfig[display];
             const StatusIcon = config.icon;
